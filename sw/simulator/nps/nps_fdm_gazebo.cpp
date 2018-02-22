@@ -37,6 +37,7 @@
 #include <string>
 #include <iostream>
 #include <sys/time.h>
+#include <chrono>
 
 #include <gazebo/gazebo.hh>
 #include <gazebo/common/common.hh>
@@ -272,17 +273,35 @@ void nps_fdm_run_step(
   }
 
   // Update the simulation for a single timestep.
+  static chrono::steady_clock::time_point readvideo_prev;
+
+  chrono::steady_clock::time_point begin = chrono::steady_clock::now();
   gazebo::runWorld(model->GetWorld(), 1);
+  chrono::steady_clock::time_point runworld = chrono::steady_clock::now();
   gazebo::sensors::run_once();
+  chrono::steady_clock::time_point runsensors = chrono::steady_clock::now();
   gazebo_write(act_commands, commands_nb);
+  chrono::steady_clock::time_point write = chrono::steady_clock::now();
   gazebo_read();
+  chrono::steady_clock::time_point read = chrono::steady_clock::now();
 #if NPS_SIMULATE_VIDEO
   gazebo_read_video();
 #endif
+  chrono::steady_clock::time_point readvideo = chrono::steady_clock::now();
 #if NPS_SIMULATE_LASER_RANGE_ARRAY
   gazebo_read_range_sensors();
 #endif
-
+  cout << endl << endl << endl;
+  cout << endl << "paparazzi:    " << chrono::duration_cast<chrono::microseconds>(begin-readvideo_prev).count() << " us" << endl;
+  cout << "run world:    " << chrono::duration_cast<chrono::microseconds>(runworld-begin).count() << " us" << endl;
+  cout << "run sensors:  " << chrono::duration_cast<chrono::microseconds>(runsensors-runworld).count() << " us" << endl;
+  cout << "write:        " << chrono::duration_cast<chrono::microseconds>(write-runsensors).count() << " us" << endl;
+  cout << "read:         " << chrono::duration_cast<chrono::microseconds>(read-write).count() << " us" << endl;
+  cout << "read video:   " << chrono::duration_cast<chrono::microseconds>(readvideo-read).count() << " us" << endl;
+  cout << endl << "total gazebo: " << chrono::duration_cast<chrono::microseconds>(readvideo-begin).count() << " us" << endl;
+  cout << endl << "total step:   " << chrono::duration_cast<chrono::microseconds>(readvideo-readvideo_prev).count() << " us" << endl;
+  cout << endl << endl << endl;
+  readvideo_prev = readvideo;
 }
 
 // TODO Atmosphere functions have not been implemented yet.
