@@ -46,7 +46,10 @@ void intermcu_set_enabled(bool value);
 #define RADIO_AUX1       5
 #define RADIO_AUX2       6
 #define RADIO_AUX3       7
+
+#ifndef RADIO_CONTROL_NB_CHANNEL
 #define RADIO_CONTROL_NB_CHANNEL 8
+#endif
 
 /* Structure for FBW status */
 struct fbw_status_t {

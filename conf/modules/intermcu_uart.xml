@@ -24,8 +24,8 @@
   </makefile>
   <makefile target="ap|fbw" firmware="fixedwing">
     <raw>
-      ifeq (,$(findstring $(SEPARATE_FBW),1 TRUE))
-      $(error Using intermcu via UART, so dual mcu with separate fbw. Please set option "SEPARATE_FBW" to TRUE.
+      ifeq (,$(findstring $(SEPARATE_FBW), TRUE))
+      #$(error Using intermcu via UART, so dual mcu with separate fbw. Please set option "SEPARATE_FBW" to TRUE.)
       endif
     </raw>
     <configure name="INTERMCU_BAUD" default="B57600"/>

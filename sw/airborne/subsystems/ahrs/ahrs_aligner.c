@@ -26,13 +26,14 @@
  *
  */
 
-#include "ahrs_aligner.h"
+
 
 #include <stdlib.h> /* for abs() */
 #include "subsystems/imu.h"
-#include "led.h"
 #include "subsystems/abi.h"
 #include "mcu_periph/sys_time.h"
+#include "ahrs_aligner.h"
+#include "led.h"
 
 struct AhrsAligner ahrs_aligner;
 
@@ -116,7 +117,7 @@ void ahrs_aligner_run(void)
   samples_idx++;
 
 #ifdef AHRS_ALIGNER_LED
-  RunOnceEvery(50, {LED_TOGGLE(AHRS_ALIGNER_LED);});
+  //RunOnceEvery(50, {LED_TOGGLE(AHRS_ALIGNER_LED);});
 #endif
 
   if (samples_idx >= AHRS_ALIGNER_SAMPLES_NB) {
@@ -153,7 +154,7 @@ void ahrs_aligner_run(void)
     if (ahrs_aligner.low_noise_cnt > LOW_NOISE_TIME) {
       ahrs_aligner.status = AHRS_ALIGNER_LOCKED;
 #ifdef AHRS_ALIGNER_LED
-      LED_ON(AHRS_ALIGNER_LED);
+      //LED_ON(AHRS_ALIGNER_LED);
 #endif
       uint32_t now_ts = get_sys_time_usec();
       AbiSendMsgIMU_LOWPASSED(ABI_BROADCAST, now_ts, &ahrs_aligner.lp_gyro,

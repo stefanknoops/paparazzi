@@ -29,8 +29,12 @@
 
 #include "std.h"
 
+#ifndef RADIO_CONTROL_NB_CHANNEL
 #define RC_DL_NB_CHANNEL 5
 #define RADIO_CONTROL_NB_CHANNEL RC_DL_NB_CHANNEL
+#else
+#define RC_DL_NB_CHANNEL RADIO_CONTROL_NB_CHANNEL
+#endif
 
 /**
  * Redefining RADIO_*
