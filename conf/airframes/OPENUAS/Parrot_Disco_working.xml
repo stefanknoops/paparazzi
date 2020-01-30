@@ -38,7 +38,7 @@ NOTES:
   <firmware name="fixedwing">
 
     <!-- ********************** For in the real flying hardware ********************-->
-    <target name="ap" board="px4fmu_4.0">
+    <target name="ap" board="px4fmu_4.0_chibios"><!--px4fmu_4.0-->
 
       <configure name="CPU_LED" value="1"/>
       <!--  TODO: After first flights try to find optimum value -->
@@ -188,8 +188,13 @@ NOTES:
     <module name="navigation"/>
     <module name="gps" type="ublox">
       <configure name="GPS_BAUD" value="B57600"/>
-      <!-- <configure name="GPS_PORT" value="UARTx"/>--><!-- Now uses the default GPS port on pixracer -->
+      <!--<configure name="GPS_PORT" value="UARTx"/> <!-- Now uses the default GPS port on pixracer -->
     </module>
+    
+    <module name="tlsf"/>
+    <module name="pprzlog"/>
+    <module name="logger" type="sd_chibios"/>
+    <module name="flight_recorder"/>
   </firmware>
 
   <!-- Handy to toy with toying around with settings on a uBlox or a modem e.g via AT commands serial device -->
@@ -264,7 +269,9 @@ NOTES:
   </firmware>
 
 <!-- ************************* MODULES ************************* -->
+
   <modules>
+	  
    <module name="auto1_commands"/><!-- NOT finished for NON intermcu to be able to set GEAR and FLAP etc. in stabiized mode for easier testflights -->
 
     <module name="baro_ms5611_spi" >
@@ -281,7 +288,7 @@ NOTES:
       <define name="CALC_AMSL_BARO" value="TRUE" />
    </module>
    <module name="geo_mag"/>
-    <!--<module name="gps" type="ubx_ucenter"/> -->
+    <module name="gps" type="ubx_ucenter"/> <!-- -->
     <!-- This GPS is a REAL ublox M8N, so setting can be saved, no need for ubx_ucenter one has can set it oneself since we have all kinds of nift Galilleio setting we rather keep that -->
 
     <module name="airspeed_ets">
@@ -332,6 +339,8 @@ NOTES:
    <!-- RPM measuring sensor -->
    <!-- <configure name="ADC_CHANNEL_GENERIC2" value="ADC_?"/>
    </module>-->
+   
+   
 
     <module name="nav" type="line"/>
     <module name="nav" type="line_border"/>
@@ -385,7 +394,7 @@ NOTES:
   </section>
 
   <servos>
-    <servo name="S_THROTTLE" no="0" min="1100" neutral="1130" max="1900"/>
+    <servo name="S_THROTTLE" no="0" min="1100" neutral="1500" max="1900"/>
     <servo name="S_AILERON" no="1" min="1100" neutral="1500" max="1900"/>
     <servo name="S_ELEVATOR" no="2" min="1100" neutral="1500" max="1900"/>
     <servo name="S_RUDDER" no="3" min="1100" neutral="1500" max="1900"/>
@@ -398,7 +407,7 @@ NOTES:
      <!-- just a tiny bit works well-->
      <define name="ASSIST_ROLL_WITH_RUDDER" value="0.09"/>
      <define name="ELEVON_ROLL_FACTOR" value="0.7f"/>
-     <define name="ELEVON_PITCH_FACTOR" value="0.6f"/>
+     <define name="ELEVON_PITCH_FACTOR" value="-0.6f"/>
      <define name="ELEVON_YAW_FACTOR" value="0.9f"/>
      <!-- --
      <define name="aileron" value="@ROLL * @ELEVON_ROLL_FACTOR"/>
@@ -430,8 +439,8 @@ NOTES:
     
     <set servo="S_THROTTLE" value="$throttleleft"/>
     <set servo="S_RUDDER" value="$throttleright"/>
-    <set servo="S_AILERON" value="$elevator - $aileron"/>
-    <set servo="S_ELEVATOR" value="$elevator + $aileron"/>
+    <set servo="S_AILERON" value="-$elevator - $aileron"/>
+    <set servo="S_ELEVATOR" value="-$elevator + $aileron"/>
     
 	  </command_laws>
 	  
@@ -486,7 +495,7 @@ NOTES:
   </commands>
 	
   <command_laws>
-	  <!-- -->
+	  <!-- these convert commands into outputs -->
 	<let var="elevator" value="@PITCH * ELEVON_PITCH_FACTOR"/>
 	<let var="leftyaw" value="(@YAW >= 0? 0 : 1)"/> <!-- -->
 	<let var="rudderleft" value="-@YAW * ELEVON_YAW_FACTOR"/>
@@ -494,7 +503,7 @@ NOTES:
 	<let var="aileron" value="@ROLL * ELEVON_ROLL_FACTOR"/>
 	<!-- -->
     <let var="rightyaw" value="(1 - $leftyaw)"/> <!-- -->
-	<let var="throttleleft" value="@THROTTLE-$rightyaw*@YAW-$leftyaw*@YAW"/>
+	<let var="throttleleft" value="@THROTTLE+$rightyaw*@YAW+$leftyaw*@YAW"/>
     <let var="throttleright" value="@THROTTLE-$leftyaw*@YAW-$rightyaw*@YAW"/> <!-- --
     <let var="throttleleft" value="@THROTTLE + @YAW"/> <!-- --
     <let var="throttleright" value="@THROTTLE -@YAW"/> <!-- -->
@@ -504,8 +513,8 @@ NOTES:
 	
 	<set servo="S_THROTTLE" value="$throttleleft"/> <!-- -->
     <set servo="S_RUDDER" value="$throttleright"/> <!-- -->
-    <set servo="S_AILERON" value="-$elevator + $aileron"/> <!-- -->
-    <set servo="S_ELEVATOR" value="+$elevator + $aileron"/> <!-- --
+    <set servo="S_AILERON" value="+$elevator + $aileron"/> <!-- -->
+    <set servo="S_ELEVATOR" value="-$elevator + $aileron"/> <!-- --
     <let var="throttleleft" value="@THROTTLE"/>
     
     <!--************ OLD SERVO DEFINITIONS *************--
@@ -722,7 +731,7 @@ NOTES:
     <!--  hint TODO Fix <define name="MilliAmpereOfAdc(adc)" value="((float)adc) * (3.3f / 4096.0f) * (90.0f / 5.0f)" />-->
     <!-- 100Amp = 2Volt -> 2482,42 tick/100Amp"(0.0402832*adc)" -->
     <!-- A simple powerblock module from CN -->
-    <!-- <define name="VoltageOfAdc(adc)" value="11.8"/>--> <!-- Quick send data test -->
+     <!--<define name="VoltageOfAdc(adc)" value="11.8"/> --><!-- Quick send data test -->
    <!--  <define name="VoltageOfAdc(adc)" value="24 - (0.004043478f * adc)"/>-->
      <!--    <define name="VOLTAGE_ADC_SCALE" value="0.004511719f"/> --> <!--  war 0.018 0.008 R1 (Bat - ADC input) = 22k, R2 (ADC input - GND) = 2.2K -->
    <!--  <define name="VOLTAGE_OFFSET" value="0" unit="V"/>
