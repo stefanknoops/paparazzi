@@ -30,7 +30,7 @@
 
 #define ESP_UART_PORT uart2
 
-
+extern void esp_event_uart_rx(void);
 extern void uart_esp_init(void);
 extern void uart_esp_loop(void);
 
