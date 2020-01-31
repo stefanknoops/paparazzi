@@ -26,6 +26,11 @@
 #ifndef PERCEVITE_WIFI_H
 #define PERCEVITE_WIFI_H
 
+#include "mcu_periph/uart.h"
+
+#define ESP_UART_PORT uart2
+
+
 extern void uart_esp_init(void);
 extern void uart_esp_loop(void);
 

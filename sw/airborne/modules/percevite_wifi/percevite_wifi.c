@@ -31,6 +31,8 @@ uint8_t str1_len = 50;
 uint8_t str2_len = 50;
 char str1[50] = {};
 char str2[50] = {};
+static uint8_t drop_string[] = "<Drop_Paintball_Now";
+#define DROP_STRINGLEN 19
 
 static void msg_cb(struct transport_tx *trans, struct link_device *dev) {
   pprz_msg_send_PERCEVITE_WIFI(trans, dev, AC_ID, str1_len, str1, str2_len, str2);
@@ -40,7 +42,20 @@ static void msg_cb(struct transport_tx *trans, struct link_device *dev) {
 void uart_esp_init() {
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_PERCEVITE_WIFI, msg_cb);
 }
-void uart_esp_loop() {}
+
+void uart_esp_loop() {
+  for (uint8_t i = 0; i < DROP_STRINGLEN; i++) {
+    uart_put_byte(&ESP_UART_PORT, 0, drop_string[i]);
+    printf("here!\n");
+  }
+
+  // while (uart_char_available(&ESP_UART_PORT)) {
+  //   uint8_t r = uart_getch(&ESP_UART_PORT);
+  //   if (r > 0) {
+  //     printf("%s", (char*) r);
+  //   }
+  // }
+}
 
 
 
