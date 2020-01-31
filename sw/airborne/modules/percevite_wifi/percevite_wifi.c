@@ -26,13 +26,14 @@
 #include "modules/percevite_wifi/percevite_wifi.h"
 #include "subsystems/datalink/telemetry.h"
 #include <stdio.h>
+#include <string.h>
 
-uint8_t str1_len = 50;
-uint8_t str2_len = 50;
-char str1[50] = {};
-char str2[50] = {};
+// NULL terminate default str
+// char array for sending drone lat_long_alt_bearing
+char str1[50] = {'0'};
+char str2[50] = {'0'};
 
-#define ESP_MAX_LEN 40 // lat,long,alt,bearing = 40 bytes max
+#define ESP_MAX_LEN 50 // lat,long,alt,bearing = 51 bytes max
 
 // generic JEVOIS message structure
 struct esp_msg_t {
@@ -45,7 +46,8 @@ struct esp_msg_t {
 enum esp_state {
   ESP_SYNC = 0,
   ESP_ID,
-  ESP_RX_MSG
+  ESP_RX_MSG,
+  ESP_RX_OK
 };
 
 // jevois struct
@@ -59,19 +61,17 @@ struct esp_t {
 
 struct esp_t esp;
 
+
 // state machine: raw message parsing function /* struct esp_t *esp, */
 static void esp_parse(char c) {
-  printf("char rxed: %c\n", c);
-
-  if (c == '(') {
-    esp.state = ESP_SYNC;
-  }
-
-  printf("esp.state: %d, esp.msg.str: %s\n", esp.state, esp.msg.str);
+  // NOTE: CR and LF are two seperate chars
+  // printf("esp.state: %d, char rxed: %c\n", esp.state, c);
   switch (esp.state) {
     case ESP_SYNC:
                   /* first char, sync string */
-                  esp.state = ESP_ID; break;
+                    if (c == '(') {
+                      esp.state = ESP_ID;
+                    } break;
     case ESP_ID:  /* take note of drone ID */
                   if (c!='\0' || c!='\n' || c!='\r') {
                     // only first byte 00-09 (10) drones for now
@@ -82,22 +82,34 @@ static void esp_parse(char c) {
                   }
                   break;
     case ESP_RX_MSG: {
+                      static uint8_t byte_ctr = 0;
+                      /* after receiving the msg, terminate ssid string */
+                      if (c=='\0' || c=='\n' || c=='\r') {
+                        esp.msg.str[byte_ctr] = '\0';
+                        byte_ctr = 0;
+                        esp.state = ESP_RX_OK; 
+                      }
+
                       /* record ssid until full lat,long,alt are stored in esp.msg.str */
                       /* don't change state machine until str terminate char is received */
-                      static uint8_t byte_ctr = 0;
-                      if (c!='\0' || c!='\n' || c!='\r') {
+                      else {
                         esp.msg.str[byte_ctr] = c;
                         byte_ctr = byte_ctr + 1;
                       }
-                      /* after receiving the msg, terminate ssid string also
-                      and restart the state machine */ 
-                      else {
-                        esp.msg.str[byte_ctr] = '\0';
-                        byte_ctr = 0;
-                        esp.state = ESP_SYNC; 
+                    } break;
+    case ESP_RX_OK: { 
+                      /* string is okay, print it out and restart the state machine */
+                      printf("esp.state: %d, esp.msg.id: %d, esp.msg.str: %s\n", esp.state, esp.msg.id, esp.msg.str);
+                      if (esp.msg.id == 1) {
+                        strncpy(str1, esp.msg.str, strlen(esp.msg.str));                        
+                        printf("drone1: %s\n", str1);
                       }
-                    }
-                    break;
+                      if (esp.msg.id == 2) {
+                        strncpy(str2, esp.msg.str, strlen(esp.msg.str));
+                        printf("drone2: %s\n", str2);
+                      }
+                      esp.state = ESP_SYNC;
+                    } break;
     default: 
                     esp.state = ESP_SYNC;
                     break;
@@ -116,11 +128,12 @@ void esp_event_uart_rx(void)
 
 
 static void msg_cb(struct transport_tx *trans, struct link_device *dev) {
-  pprz_msg_send_PERCEVITE_WIFI(trans, dev, AC_ID, str1_len, str1, str2_len, str2);
-  printf("drone1: %s, drone2: %s\n", str1, str2);
+  pprz_msg_send_PERCEVITE_WIFI(trans, dev, AC_ID, strlen(str1), str1, strlen(str2), str2);
+  // printf("drone1: %s, drone2: %s\n", str1, str2);
 }
 
 void uart_esp_init() {
+  esp.state = ESP_SYNC;
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_PERCEVITE_WIFI, msg_cb);
 }
 
