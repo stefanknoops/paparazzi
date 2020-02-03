@@ -101,10 +101,14 @@ static void esp_parse(char c) {
                       /* string is okay, print it out and restart the state machine */
                       printf("esp.state: %d, esp.msg.id: %d, esp.msg.str: %s\n", esp.state, esp.msg.id, esp.msg.str);
                       if (esp.msg.id == 1) {
+                        // clear old string buffer before rewriting
+                        memset(str1, 0, 50);
                         strncpy(str1, esp.msg.str, strlen(esp.msg.str));                        
                         printf("drone1: %s\n", str1);
                       }
                       if (esp.msg.id == 2) {
+                        // clear old string buffer before rewriting
+                        memset(str2, 0, 50);
                         strncpy(str2, esp.msg.str, strlen(esp.msg.str));
                         printf("drone2: %s\n", str2);
                       }
