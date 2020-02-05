@@ -89,10 +89,10 @@ static void esp_parse(char c) {
   // printf("esp.state: %d, char rxed: %c\n", esp.state, c);
   switch (esp.state) {
     case ESP_SYNC:
-                  /* first char, sync string */
-                    if (c == '(') {
-                      esp.state = ESP_ID;
-                    } break;
+			/* first char, sync string */
+			if (c == '$') {
+					esp.state = ESP_ID;	
+    } break;
 
     case ESP_ID: {  /* take note of drone ID */
 					if (c!='\0' || c!='\n' || c!='\r') {
@@ -120,7 +120,7 @@ static void esp_parse(char c) {
 					else {
 						esp.state = ESP_RX_ERR;
 					} 
-				  } break;
+	} break;
 	case ESP_RX_MSG: {  
 						/* not misra complaint to declare in case, but local-var */
 						static uint8_t byte_ctr = 0;
@@ -144,7 +144,7 @@ static void esp_parse(char c) {
 							esp.msg.str[byte_ctr] = c;
 							byte_ctr = byte_ctr + 1;
 						}
-					} break;
+		} break;
     case ESP_RX_OK: {
 						/* string is okay, print it out and reset the state machine */
 						printf("esp.state: %d, esp.msg.id: %d, esp.msg.str: %s\n", esp.state, esp.msg.id, esp.msg.str);
@@ -155,16 +155,16 @@ static void esp_parse(char c) {
 						/* reset state machine */
 						esp.state = ESP_SYNC;
 
-					} break;
+		} break;
     case ESP_RX_ERR: {
 						printf("ESP_RX_ERR: string terminated before drone info\n");
 
 						/* reset state machine, string terminated earlier than expected */
 						esp.state = ESP_SYNC;
-    				} break;
-    default: 
-                    esp.state = ESP_SYNC;
-                    break;
+    } break;
+    default: {
+						esp.state = ESP_SYNC;
+		} break;
   }
 }
 
@@ -226,28 +226,41 @@ void uart_esp_loop() {
 	struct FloatEulers *att = stateGetNedToBodyEulers_f();
 
 	// 5 NED Heading and end string
-	#define TX_STRING_LEN ((6*4) + 3)
+	#define TX_STRING_LEN (1 + (6*4) + 3)
 	char tx_string[TX_STRING_LEN] = {0};
 
-	// end bytes
+	// start and end bytes
+	tx_string[0] = '$';
 	tx_string[TX_STRING_LEN-3] = '*';
 	tx_string[TX_STRING_LEN-2] = '*';
 	tx_string[TX_STRING_LEN-1] = 0;
 
-	sprintf(drone_status[SELF_ID].north_str, "%06.2f", 11.53453);
-	strncpy(&tx_string[0], drone_status[SELF_ID].north_str, 6);
+		// removebeforeflight
+		static int ctr1 = 0;
+		static int ctr2 = 0;
+		if (ctr1 % 3 == 0) {
+			ctr2 = ctr2 + 1;
+		}
+		ctr1 = ctr1 + 1;
+
+	sprintf(drone_status[SELF_ID].north_str, "%06.2f", 00.0000);
+	strncpy(&tx_string[1+0], drone_status[SELF_ID].north_str, 6);
 
 	sprintf(drone_status[SELF_ID].east_str, "%06.2f", 22.53453);
-	strncpy(&tx_string[6], drone_status[SELF_ID].east_str, 6);
+	strncpy(&tx_string[1+6], drone_status[SELF_ID].east_str, 6);
+
+		// remove before flight 
+		sprintf(drone_status[SELF_ID].east_str, "%03d", ctr2);
+		strncpy(&tx_string[1+6], drone_status[SELF_ID].east_str, 3);
 
 	sprintf(drone_status[SELF_ID].down_str, "%06.2f", 33.53453);
-	strncpy(&tx_string[12], drone_status[SELF_ID].down_str, 6);
+	strncpy(&tx_string[1+12], drone_status[SELF_ID].down_str, 6);
 
 	sprintf(drone_status[SELF_ID].heading_str, "%06.2f", 44.53453);
-	strncpy(&tx_string[18], drone_status[SELF_ID].heading_str, 6);
+	strncpy(&tx_string[1+18], drone_status[SELF_ID].heading_str, 6);
 
 	// DEBUG: 
-	// printf("ssid should be: %s\n", tx_string);
+	printf("ssid should be: %s\n", tx_string);
 
 	esp_send_string(tx_string);
 
