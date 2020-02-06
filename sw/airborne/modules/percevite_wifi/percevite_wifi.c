@@ -85,6 +85,8 @@ static void parse_packet(int id, char *s) {
 // state machine: raw message parsing function /* struct esp_t *esp, */
 static void esp_parse(char c) {
 
+	static uint8_t byte_ctr = 0;
+
   // NOTE: CR and LF are two seperate chars
   // printf("esp.state: %d, char rxed: %c\n", esp.state, c);
   switch (esp.state) {
@@ -95,10 +97,8 @@ static void esp_parse(char c) {
     } break;
 
     case ESP_ID: {  /* take note of drone ID */
-					if (c!='\0' || c!='\n' || c!='\r') {
 
-						/* not misra complaint to declare in case, but local-var */
-						static uint8_t byte_ctr = 0;
+					if (c!='\0' || c!='\n' || c!='\r' || c > 47 || c < 58) {
 
 						/* only first 2 bytes 00-99 (100) drones for now */
 						char tmp_str[3] = {'0','0', '\0'};
@@ -110,7 +110,7 @@ static void esp_parse(char c) {
 							/* convert 3 bytes with terminated string to int */
 							esp.msg.id = (uint8_t) atoi(tmp_str);
 
-							/* reset for bytectr next time for next droneID */
+							/* reset for bytectr for next state */
 							byte_ctr = 0;  
 
 							/* switch state machine */
@@ -119,19 +119,18 @@ static void esp_parse(char c) {
 					}
 					else {
 						esp.state = ESP_RX_ERR;
+						byte_ctr = 0;
 					} 
 	} break;
 	case ESP_RX_MSG: {  
-						/* not misra complaint to declare in case, but local-var */
-						static uint8_t byte_ctr = 0;
-
-						/* if received terminate before string complete, trigger ERROR */
-						if ((c=='\0' || c=='\n' || c=='\r') && (byte_ctr == 0)) {
+						/* if received terminate or non number ascii before atleast 10 bytes are received, trigger ERROR */
+						if (((c < 48) || (c > 57)) && (c!='.') && (c!= '-') && (byte_ctr < 10)) {
 							esp.state = ESP_RX_ERR;
+							byte_ctr = 0;
 						}
 
 						/* after receiving the msg, terminate ssid string */
-						if (c=='\0' || c=='\n' || c=='\r') {
+						if ((c=='\0' || c=='\n' || c=='\r' || c=='*') && (byte_ctr > 10)) {
 							esp.msg.str[byte_ctr] = '\0';
 							byte_ctr = 0;
 							/* received message, now switch state machine */
@@ -158,11 +157,12 @@ static void esp_parse(char c) {
 		} break;
     case ESP_RX_ERR: {
 						printf("ESP_RX_ERR: string terminated before drone info\n");
-
+						byte_ctr = 0;
 						/* reset state machine, string terminated earlier than expected */
 						esp.state = ESP_SYNC;
     } break;
     default: {
+						byte_ctr = 0;
 						esp.state = ESP_SYNC;
 		} break;
   }
@@ -183,11 +183,11 @@ static void msg_cb(struct transport_tx *trans, struct link_device *dev) {
   
 	// TODO: debug, index out of bounds, send messages for drone1 and drone2
 	pprz_msg_send_PERCEVITE_WIFI(trans, dev, AC_ID, 
-									strlen(drone_status[0].north_str), drone_status[0].north_str, 
-									strlen(drone_status[1].north_str), drone_status[1].north_str);
+									strlen(drone_status[0].east_str), drone_status[0].east_str, 
+									strlen(drone_status[1].east_str), drone_status[1].east_str);
 
 	// DEBUG: 
-	// printf("drone1: %s, drone2: %s\n", str1, str2);
+	printf("east_len: %d, east_str: %s\n", strlen(drone_status[0].east_str), drone_status[1].east_str);
 }
 
 
@@ -260,7 +260,7 @@ void uart_esp_loop() {
 	strncpy(&tx_string[1+18], drone_status[SELF_ID].heading_str, 6);
 
 	// DEBUG: 
-	printf("ssid should be: %s\n", tx_string);
+	// printf("ssid should be: %s\n", tx_string);
 
 	esp_send_string(tx_string);
 
