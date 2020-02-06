@@ -79,7 +79,10 @@ static void parse_packet(int id, char *s) {
 	snprintf(drone_status[id].heading_str, 7, "%s", &s[18]);
 	drone_status[id].heading_str[6] = 0;
 	drone_status[id].heading = strtof(drone_status[id].heading_str, NULL);
-	printf("Heading: %s, %f\n", drone_status[id].heading_str, drone_status[id].heading); 
+	printf("Heading: %s, %f\n", drone_status[id].heading_str, drone_status[id].heading);
+
+	// char ack[4] = {'$', 'O', 'K', 0};
+	// esp_send_string(ack);
 }
 
 // state machine: raw message parsing function /* struct esp_t *esp, */
@@ -97,9 +100,8 @@ static void esp_parse(char c) {
     } break;
 
     case ESP_ID: {  /* take note of drone ID */
-
-					if (c!='\0' || c!='\n' || c!='\r' || c > 47 || c < 58) {
-
+					/* only accept if received char is a number */
+					if (c > 47 && c < 58) {
 						/* only first 2 bytes 00-99 (100) drones for now */
 						char tmp_str[3] = {'0','0', '\0'};
 						tmp_str[byte_ctr] = c;
@@ -187,7 +189,7 @@ static void msg_cb(struct transport_tx *trans, struct link_device *dev) {
 									strlen(drone_status[1].east_str), drone_status[1].east_str);
 
 	// DEBUG: 
-	printf("east_len: %d, east_str: %s\n", strlen(drone_status[0].east_str), drone_status[1].east_str);
+	// printf("east_len: %d, east_str: %s\n", strlen(drone_status[0].east_str), drone_status[1].east_str);
 }
 
 
@@ -260,9 +262,12 @@ void uart_esp_loop() {
 	strncpy(&tx_string[1+18], drone_status[SELF_ID].heading_str, 6);
 
 	// DEBUG: 
-	// printf("ssid should be: %s\n", tx_string);
+	printf("ssid should be: %s\n", tx_string);
 
-	esp_send_string(tx_string);
+	// mutex, don't tx to esp when ack is being sent
+  //if (esp.state!= ESP_RX_OK) {
+		esp_send_string(tx_string);
+	//}
 
 }
 
