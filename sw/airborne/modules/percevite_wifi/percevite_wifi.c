@@ -24,10 +24,10 @@
  */
 
 /**************************************************************************************
- * 
+ * CURRENTLY INCONSISTENT
  * | Startbyte(0) | DroneID (1-2) | North (3-8)     | East (9-14)     | Down (15-20)    | Heading (20-25) | Endbytes (26-27) |
  * |--------------|---------------|-----------------|-----------------|-----------------|-----------------|------------------|
- * | '(' (char)   | 1 bytes (int) | 6 bytes (float) | 6 bytes (float) | 6 bytes (float) | 6 bytes (float) | '**'0 (char)     |
+ * | '$' (char)   | 1 bytes (char)| 4 bytes (float) | 4 bytes (float) | 4 bytes (float) | 4 bytes (float) | '*'0 (char)      |
  * |                                                                                                                         |
  * |--------------ESP-------------|--------------PPRZ----------PPRZ-----------------PPRZ----------------------PPRZ-----------|
  *  This firmware only sends the middle 4*6 bytes to ESP, header of the packet is encoded by ESP32
@@ -40,132 +40,146 @@
 #include "subsystems/datalink/telemetry.h"
 #include "state.h"
 
+drone_data_t dr_data[MAX_DRONES];
+uint8_t esp_state = ESP_SYNC;
 
-// utility function to send a string to esp (TODO: maybe NL-CR-LF is not sent)
-static void esp_send_string(char *s)
+// Send a hex array to esp
+static uint8_t esp_send_string(uint8_t *s, uint8_t len)
 {
-	uint8_t i = 0;
-	while (s[i]) {
+	// start byte
+	uart_put_byte(&(ESP_UART_PORT), 0, '$');
+	uart_put_byte(&(ESP_UART_PORT), 0, 178);
+
+	// maximum of 255 bytes
+ 	uint8_t i = 0;
+	for (i=0; i<len; i++) {
 		uart_put_byte(&(ESP_UART_PORT), 0, (uint8_t)(s[i]));
-		i++;
 	}
-	uart_put_byte(&(ESP_UART_PORT), 0, '\n');
+
+	// end byte
+	// uart_put_byte(&(ESP_UART_PORT), 0, '*');
+
+	return (i+2);
 }
 
 
+// Send an ack to esp, that other drone's data was successfully received
+static uint8_t esp_send_ack(void)
+{
+	// start bytes
+	uart_put_byte(&(ESP_UART_PORT), 0, '$');
+	uart_put_byte(&(ESP_UART_PORT), 0, 178);
 
-static void parse_packet(int id, char *s) {
-	/* CAUTION: strncpy and snprintf have different lengths and starting ptr */
+	uint8_t s[2] = {0x04, ACK_FRAME};
+	uint8_t i = 0; // maximum of 255 bytes
+	for (i=0; i<2; i++) {
+		uart_put_byte(&(ESP_UART_PORT), 0, (uint8_t)(s[i]));
+	}
 
-	// North
-	snprintf(drone_status[id].north_str, 7, "%s", s);
-	drone_status[id].north_str[6] = 0;
-	drone_status[id].north = strtof(drone_status[id].north_str, NULL);
-	printf("North: %s, len: %d, %f\n", drone_status[id].north_str, strlen(drone_status[id].north_str), drone_status[id].north);
+	// end byte
+	// uart_put_byte(&(ESP_UART_PORT), 0, '*');
 
-	// East 
-	snprintf(drone_status[id].east_str, 7, "%s", &s[6]);
-	drone_status[id].east_str[6] = 0;
-	drone_status[id].east = strtof(drone_status[id].east_str, NULL);
-	printf("East: %s, len: %d, %f\n", drone_status[id].east_str, strlen(drone_status[id].east_str), drone_status[id].east);
-
-	// Down
-	snprintf(drone_status[id].down_str, 7, "%s", &s[12]);
-	drone_status[id].down_str[6] = 0;
-	drone_status[id].down = strtof(drone_status[id].down_str, NULL);
-	printf("Down: %s, %f\n", drone_status[id].down_str, drone_status[id].down); 
-
-	// heading 
-	snprintf(drone_status[id].heading_str, 7, "%s", &s[18]);
-	drone_status[id].heading_str[6] = 0;
-	drone_status[id].heading = strtof(drone_status[id].heading_str, NULL);
-	printf("Heading: %s, %f\n", drone_status[id].heading_str, drone_status[id].heading);
-
-	// char ack[4] = {'$', 'O', 'K', 0};
-	// esp_send_string(ack);
+	return (i+2);
 }
 
-// state machine: raw message parsing function /* struct esp_t *esp, */
-static void esp_parse(char c) {
+uint8_t localbuf[ESP_MAX_LEN] = {0};
+
+// state machine: raw message parsing function, parse other drone id's reported by esp32
+static void esp_parse(uint8_t c) {
 
 	static uint8_t byte_ctr = 0;
+	static uint8_t drone_id = 0;
+	static uint8_t packet_length = 0;
+	static uint8_t packet_type = 0;
 
-  // NOTE: CR and LF are two seperate chars
-  // printf("esp.state: %d, char rxed: %c\n", esp.state, c);
-  switch (esp.state) {
-    case ESP_SYNC:
+  printf("esp_state: %d, char rxed: 0x%02x\n", esp_state, c);
+  switch (esp_state) {
+    case ESP_SYNC: {
+
 			/* first char, sync string */
 			if (c == '$') {
-					esp.state = ESP_ID;	
-    } break;
+				byte_ctr = byte_ctr + 1;
+    	}
 
-    case ESP_ID: {  /* take note of drone ID */
-					/* only accept if received char is a number */
-					if (c > 47 && c < 58) {
-						/* only first 2 bytes 00-99 (100) drones for now */
-						char tmp_str[3] = {'0','0', '\0'};
-						tmp_str[byte_ctr] = c;
-						byte_ctr = byte_ctr + 1;
+			/* second char: are you really the start of the packet? */
+			if ((byte_ctr == 1) && (c == 178)) {
+				byte_ctr = byte_ctr + 1;
+				esp_state = ESP_DRONE_INFO;
+			}
+		} break;
 
-						/* if received two bytes after start of packet */
-						if (byte_ctr == 2) {
-							/* convert 3 bytes with terminated string to int */
-							esp.msg.id = (uint8_t) atoi(tmp_str);
+    case ESP_DRONE_INFO: {
+			if (byte_ctr == 2) {
+				/* take note of packet length */
+				drone_id = c;
+				byte_ctr = byte_ctr + 1;
+			} else if (byte_ctr == 3) {
+				/* take note of packet type */
+				packet_type = c;
+				byte_ctr = byte_ctr + 1;
+			} else if (byte_ctr == 4) {
+				/* take note of drone ID */
+				packet_length = c;
+				byte_ctr = byte_ctr + 1;
 
-							/* reset for bytectr for next state */
-							byte_ctr = 0;  
+				// info frame populated!! 
+				printf("packet_length: %d, packet_type: %d, drone_id: %d\n", packet_length, packet_type, drone_id);
+				if (packet_type == ACK_FRAME && packet_length == 4) {
+					// TODO: esp received ssid change signal and sent you ack, 
+					// indicate that on bool pprz esp ping? 
+					esp_state = ESP_RX_OK;
+					byte_ctr = 0;
+				}
 
-							/* switch state machine */
-							esp.state = ESP_RX_MSG;
-						}
-					}
-					else {
-						esp.state = ESP_RX_ERR;
-						byte_ctr = 0;
-					} 
-	} break;
-	case ESP_RX_MSG: {  
-						/* if received terminate or non number ascii before atleast 10 bytes are received, trigger ERROR */
-						if (((c < 48) || (c > 57)) && (c!='.') && (c!= '-') && (byte_ctr < 10)) {
-							esp.state = ESP_RX_ERR;
-							byte_ctr = 0;
-						}
+				/* packet length will always be shorter than padded struct, create some leeway */
+				else if ((packet_type == DATA_FRAME) && (packet_length >= (sizeof(drone_data_t)-5))) {
+					esp_state = ESP_DRONE_DATA;
+				}	else {
+					// do nothing?!
+				} 
+			} else {
+				// do nothing?!
+			}
+			
+		} break;
 
-						/* after receiving the msg, terminate ssid string */
-						if ((c=='\0' || c=='\n' || c=='\r' || c=='*') && (byte_ctr > 10)) {
-							esp.msg.str[byte_ctr] = '\0';
-							byte_ctr = 0;
-							/* received message, now switch state machine */
-							esp.state = ESP_RX_OK; 
-						}
-
-						/* record ssid until full lat,long,alt are stored in esp.msg.str */
-						/* don't change state machine until str terminate char is received */
-						else {
-							esp.msg.str[byte_ctr] = c;
-							byte_ctr = byte_ctr + 1;
-						}
+		case ESP_DRONE_DATA: {
+			uint8_t st_byte_pos = byte_ctr;
+			
+			if (byte_ctr < packet_length) {
+				localbuf[byte_ctr - st_byte_pos] = c;
+				byte_ctr = byte_ctr + 1;
+				printf("ctr: %d\n", byte_ctr);
+			}			
+			/* after receiving the msg, terminate ssid string */
+			if (byte_ctr == packet_length) {
+				byte_ctr = 0;
+				esp_state = ESP_RX_OK; 
+			}
+			// else {
+			// 	byte_ctr = 0;
+			// 	esp_state = ESP_RX_ERR; 
+			// }
 		} break;
     case ESP_RX_OK: {
-						/* string is okay, print it out and reset the state machine */
-						printf("esp.state: %d, esp.msg.id: %d, esp.msg.str: %s\n", esp.state, esp.msg.id, esp.msg.str);
+			memcpy(&dr_data[drone_id], &localbuf, sizeof(drone_data_t));
 
-						/* populate drone status structure */
-						parse_packet(esp.msg.id, esp.msg.str);
-						
-						/* reset state machine */
-						esp.state = ESP_SYNC;
+			/* string is okay, print it out and reset the state machine */
+			printf("statemc: %d, droneid: %d, msgstr: %s\n", esp_state, drone_id, localbuf);
+
+			/* reset state machine */
+			esp_state = ESP_SYNC;
 
 		} break;
     case ESP_RX_ERR: {
 						printf("ESP_RX_ERR: string terminated before drone info\n");
 						byte_ctr = 0;
 						/* reset state machine, string terminated earlier than expected */
-						esp.state = ESP_SYNC;
+						esp_state = ESP_SYNC;
     } break;
     default: {
 						byte_ctr = 0;
-						esp.state = ESP_SYNC;
+						esp_state = ESP_SYNC;
 		} break;
   }
 }
@@ -173,49 +187,60 @@ static void esp_parse(char c) {
 // event based UART polling function 
 void esp_event_uart_rx(void)
 {
-	// Look for data on serial link and send to parser
-	while (uart_char_available(&(ESP_UART_PORT))) {
-		uint8_t ch = uart_getch(&(ESP_UART_PORT));
-		esp_parse(ch);
-	}
+	// // Look for data on serial link and send to parser
+	// while (uart_char_available(&(ESP_UART_PORT))) {
+	// 	uint8_t ch = uart_getch(&(ESP_UART_PORT));
+	// 	esp_parse(ch);
+	// }
+
 }
 
 
-static void msg_cb(struct transport_tx *trans, struct link_device *dev) {
+// static void msg_cb(struct transport_tx *trans, struct link_device *dev) {
+
+// 	// char buf1[10] = {0};
+// 	// char buf2[10] = {0};
   
-	// TODO: debug, index out of bounds, send messages for drone1 and drone2
-	pprz_msg_send_PERCEVITE_WIFI(trans, dev, AC_ID, 
-									strlen(drone_status[0].east_str), drone_status[0].east_str, 
-									strlen(drone_status[1].east_str), drone_status[1].east_str);
+// 	// // TODO: debug, index out of bounds, send messages for drone1 and drone2
+// 	// pprz_msg_send_PERCEVITE_WIFI(trans, dev, AC_ID, 
+// 	// 								strlen(drone_status[0].), idrone_status[0].east_str, 
+// 	// 								strlen(dr_status[1].pos.x), gcvt(dr_status[1].pos.x, 6, buf2));
 
-	// DEBUG: 
-	// printf("east_len: %d, east_str: %s\n", strlen(drone_status[0].east_str), drone_status[1].east_str);
-}
+// 	// DEBUG: 
+// 	// printf("east_len: %d, east_str: %s\n", strlen(drone_status[0].east_str), drone_status[1].east_str);
+// }
 
 
 static void clear_drone_status(void) {
 	for (uint8_t id = 0; id < MAX_DRONES; id++) {
 		// initialize at tropical waters of eastern Altanic ocean, facing the artic
-		drone_status[id].north = 0;
-		drone_status[id].east = 0;
-		drone_status[id].down = 0;
-		drone_status[id].heading = 0;
-		// NULL terminate all strings 
-		memset(drone_status[id].north_str,  0, 7);
-		memset(drone_status[id].east_str,   0, 7);
-		memset(drone_status[id].down_str,   0, 7);
-		memset(drone_status[id].heading_str,0, 7);
+		dr_data[id].pos.x = 0;
+		dr_data[id].pos.y = 0;
+		dr_data[id].pos.z = 0;
+		dr_data[id].heading = 0;
+		dr_data[id].vel.x = 0;
+		dr_data[id].vel.y = 0;
+		dr_data[id].vel.z = 0;
 	}
 }
 
 void uart_esp_init() {
+	
 	/* reset receive buffer state machine */
-	esp.state = ESP_SYNC;
+	esp_state = ESP_SYNC;
 
 	/* check pprz message for drone1 and drone2 (sort of like esp heartbeat) */
-	register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_PERCEVITE_WIFI, msg_cb);
+	// register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_PERCEVITE_WIFI, msg_cb);
 
 	clear_drone_status();
+
+
+
+
+
+
+
+	
 }
 
 
@@ -227,47 +252,66 @@ void uart_esp_loop() {
 	struct NedCoor_f *optivel = stateGetSpeedNed_f();
 	struct FloatEulers *att = stateGetNedToBodyEulers_f();
 
-	// 5 NED Heading and end string
-	#define TX_STRING_LEN (1 + (6*4) + 3)
-	char tx_string[TX_STRING_LEN] = {0};
+	// size of string = sizeof(uart_packet_t)
 
-	// start and end bytes
-	tx_string[0] = '$';
-	tx_string[TX_STRING_LEN-3] = '*';
-	tx_string[TX_STRING_LEN-2] = '*';
-	tx_string[TX_STRING_LEN-1] = 0;
 
-		// removebeforeflight
-		static int ctr1 = 0;
-		static int ctr2 = 0;
-		if (ctr1 % 3 == 0) {
-			ctr2 = ctr2 + 1;
-		}
-		ctr1 = ctr1 + 1;
 
-	sprintf(drone_status[SELF_ID].north_str, "%06.2f", 00.0000);
-	strncpy(&tx_string[1+0], drone_status[SELF_ID].north_str, 6);
 
-	sprintf(drone_status[SELF_ID].east_str, "%06.2f", 22.53453);
-	strncpy(&tx_string[1+6], drone_status[SELF_ID].east_str, 6);
+		#define TX_STRING_LEN 31
+	uint8_t tx_string[TX_STRING_LEN] = {0};
+	uart_packet_t uart_packet = {
+		.info = {
+			.drone_id = SELF_ID,
+			.packet_type = DATA_FRAME,
+			.packet_length = 2 + sizeof(uart_packet_t),
+		},
+		.data = {
+			.pos = {
+				.x = -1.53,
+				.y = -346.234,
+				.z = 23455.234,
+			},
+			.heading = -452.12,
+			.vel = {
+				.x = -1.53,
+				.y = -346.234,
+				.z = 23455.234,
+			},
+		},
+	};
 
-		// remove before flight 
-		sprintf(drone_status[SELF_ID].east_str, "%03d", ctr2);
-		strncpy(&tx_string[1+6], drone_status[SELF_ID].east_str, 3);
-
-	sprintf(drone_status[SELF_ID].down_str, "%06.2f", 33.53453);
-	strncpy(&tx_string[1+12], drone_status[SELF_ID].down_str, 6);
-
-	sprintf(drone_status[SELF_ID].heading_str, "%06.2f", 44.53453);
-	strncpy(&tx_string[1+18], drone_status[SELF_ID].heading_str, 6);
-
+	printf("START: sizeof(uart_packet_t) = %d\n", sizeof(uart_packet_t));
+	// tx_string[0] = '$';
+	// tx_string[1] = 178;
+	memcpy(&tx_string[0], &uart_packet, sizeof(uart_packet_t));
+	
 	// DEBUG: 
-	printf("ssid should be: %s\n", tx_string);
+	printf("ssid should be: ");
+	for (int i = 0; i < sizeof(uart_packet_t); i++) {
+		printf("0x%02x,", tx_string[i]);
+	}
+	printf("*******\n");
+
+	esp_send_string(tx_string, sizeof(uart_packet_t));
 
 	// mutex, don't tx to esp when ack is being sent
   //if (esp.state!= ESP_RX_OK) {
-		esp_send_string(tx_string);
+		
 	//}
+	uint8_t test_str[34] = {0};
+	test_str[0] = '$';
+	test_str[1] = 178;
+	strncpy(&test_str[2], tx_string, sizeof(uart_packet_t));
+
+	// need to send one additional byte at the end for state machine to switch. Send 0x00; 
+	for (int i = 0; i <= 34; i ++) {
+		esp_parse(test_str[i]);
+	}
+
+
+
+
+
 
 }
 
