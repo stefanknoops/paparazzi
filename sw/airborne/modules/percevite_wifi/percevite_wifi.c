@@ -50,19 +50,27 @@ static uint8_t esp_send_string(uint8_t *s, uint8_t len)
 	uart_put_byte(&(ESP_UART_PORT), 0, '$');
 	uart_put_byte(&(ESP_UART_PORT), 0, 178);
 
+	uint8_t checksum = 0;
 	// maximum of 255 bytes
  	uint8_t i = 0;
-	for (i=0; i<len; i++) {
+	for (i = 0; i < len; i ++) {
 		uart_put_byte(&(ESP_UART_PORT), 0, (uint8_t)(s[i]));
+		
+		// TODO: remove when full checksum
+		if (i > 2) {
+			checksum += s[i];
+		}
 	}
+	printf("checksum: 0x%02x\n", checksum);
+	uart_put_byte(&(ESP_UART_PORT), 0, checksum);
 
 	// end byte
 	// uart_put_byte(&(ESP_UART_PORT), 0, '*');
 
-	return (i+2);
+	return (i+3);
 }
 
-
+// TODO: checksum?
 // Send an ack to esp, that other drone's data was successfully received
 static uint8_t esp_send_ack(void)
 {
@@ -82,6 +90,25 @@ static uint8_t esp_send_ack(void)
 	return (i+2);
 }
 
+static void print_struct(drone_data_t *dat) {
+printf("dat->pos.x: %f\n \
+				dat->pos.y: %f\n \
+				dat->pos.z: %f\n \
+				dat->heading: %f\n \
+				dat->vel.x: %f\n \
+				dat->vel.y: %f\n \
+				dat->vel.z: %f\n",
+				dat->pos.x, 
+				dat->pos.y,
+				dat->pos.z,
+				dat->heading,
+				dat->vel.x,
+				dat->vel.y,
+				dat->vel.z);
+}
+
+
+// null terminated at the end is fine for memcpy
 uint8_t localbuf[ESP_MAX_LEN] = {0};
 
 // state machine: raw message parsing function, parse other drone id's reported by esp32
@@ -91,6 +118,8 @@ static void esp_parse(uint8_t c) {
 	static uint8_t drone_id = 0;
 	static uint8_t packet_length = 0;
 	static uint8_t packet_type = 0;
+	static uint8_t checksum = 0;
+	static uint8_t prev_char = 0;
 
   printf("esp_state: %d, char rxed: 0x%02x\n", esp_state, c);
   switch (esp_state) {
@@ -134,6 +163,9 @@ static void esp_parse(uint8_t c) {
 				/* packet length will always be shorter than padded struct, create some leeway */
 				else if ((packet_type == DATA_FRAME) && (packet_length >= (sizeof(drone_data_t)-5))) {
 					esp_state = ESP_DRONE_DATA;
+				} else if (packet_length > ESP_MAX_LEN) {
+					printf("[err] Packet unexpectedly long \n");
+					esp_state = ESP_RX_ERR;
 				}	else {
 					// do nothing?!
 				} 
@@ -144,28 +176,45 @@ static void esp_parse(uint8_t c) {
 		} break;
 
 		case ESP_DRONE_DATA: {
-			uint8_t st_byte_pos = byte_ctr;
-			
+			uint8_t st_byte_pos = 5;  // TODO: remove when full checksum
 			if (byte_ctr < packet_length) {
+				/* fill a localbuf and calculate local checksum */
 				localbuf[byte_ctr - st_byte_pos] = c;
+
+				checksum += localbuf[byte_ctr - st_byte_pos];
+				
 				byte_ctr = byte_ctr + 1;
-				printf("ctr: %d\n", byte_ctr);
-			}			
+				printf("byte_ctr: %d, idx: %d\n", byte_ctr, byte_ctr - st_byte_pos);		
+			}
 			/* after receiving the msg, terminate ssid string */
 			if (byte_ctr == packet_length) {
 				byte_ctr = 0;
-				esp_state = ESP_RX_OK; 
+				esp_state = ESP_ERR_CHK;
 			}
-			// else {
-			// 	byte_ctr = 0;
-			// 	esp_state = ESP_RX_ERR; 
-			// }
 		} break;
-    case ESP_RX_OK: {
-			memcpy(&dr_data[drone_id], &localbuf, sizeof(drone_data_t));
 
+		case ESP_ERR_CHK: {
+			/* check if last packet matches your checksum */
+			if (c == checksum) {
+				printf("checksum matched!\n");
+				for (int i = 0; i<packet_length; i++) {
+					printf("0x%02x,", localbuf[i]);
+				}
+				esp_state = ESP_RX_OK;
+			}
+			else {
+				esp_state = ESP_RX_ERR;
+			}
+		} // no break statement required;
+
+    case ESP_RX_OK: {
+			/* checksum matches, proceed to populate the struct */
+			memcpy(&dr_data[drone_id], &localbuf, sizeof(drone_data_t));
+			checksum = 0;
 			/* string is okay, print it out and reset the state machine */
-			printf("statemc: %d, droneid: %d, msgstr: %s\n", esp_state, drone_id, localbuf);
+			printf("ESP_OKAY!!!!: state: %d, droneid: %d\n", esp_state, drone_id);
+
+			print_struct(&dr_data[drone_id]);
 
 			/* reset state machine */
 			esp_state = ESP_SYNC;
@@ -174,6 +223,7 @@ static void esp_parse(uint8_t c) {
     case ESP_RX_ERR: {
 						printf("ESP_RX_ERR: string terminated before drone info\n");
 						byte_ctr = 0;
+						checksum = 0;
 						/* reset state machine, string terminated earlier than expected */
 						esp_state = ESP_SYNC;
     } break;
@@ -182,16 +232,26 @@ static void esp_parse(uint8_t c) {
 						esp_state = ESP_SYNC;
 		} break;
   }
+
+	/* reset state machine asap, when start pattern is observed */
+	if (prev_char == '$' && c == 178) {
+		byte_ctr = 2;
+		esp_state = ESP_DRONE_INFO;
+  }
+
+	/* for start byte pattern check */
+	prev_char = c;
+
 }
 
 // event based UART polling function 
 void esp_event_uart_rx(void)
 {
 	// // Look for data on serial link and send to parser
-	// while (uart_char_available(&(ESP_UART_PORT))) {
-	// 	uint8_t ch = uart_getch(&(ESP_UART_PORT));
-	// 	esp_parse(ch);
-	// }
+	while (uart_char_available(&(ESP_UART_PORT))) {
+		uint8_t ch = uart_getch(&(ESP_UART_PORT));
+		esp_parse(ch);
+	}
 
 }
 
@@ -235,10 +295,10 @@ void uart_esp_init() {
 	clear_drone_status();
 
 
-
-
-
-
+	// mutex, don't tx to esp when ack is being sent
+  //if (esp.state!= ESP_RX_OK) {
+		
+	//}
 
 	
 }
@@ -255,9 +315,7 @@ void uart_esp_loop() {
 	// size of string = sizeof(uart_packet_t)
 
 
-
-
-		#define TX_STRING_LEN 31
+	#define TX_STRING_LEN 31
 	uint8_t tx_string[TX_STRING_LEN] = {0};
 	uart_packet_t uart_packet = {
 		.info = {
@@ -294,24 +352,17 @@ void uart_esp_loop() {
 
 	esp_send_string(tx_string, sizeof(uart_packet_t));
 
-	// mutex, don't tx to esp when ack is being sent
-  //if (esp.state!= ESP_RX_OK) {
-		
-	//}
-	uint8_t test_str[34] = {0};
+
+	// If test
+	uint8_t test_str[35] = {0};
 	test_str[0] = '$';
 	test_str[1] = 178;
 	strncpy(&test_str[2], tx_string, sizeof(uart_packet_t));
-
+	test_str[33] = 0x3e;
 	// need to send one additional byte at the end for state machine to switch. Send 0x00; 
 	for (int i = 0; i <= 34; i ++) {
 		esp_parse(test_str[i]);
 	}
-
-
-
-
-
 
 }
 

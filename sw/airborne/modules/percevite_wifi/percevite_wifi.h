@@ -26,6 +26,10 @@
 #ifndef PERCEVITE_WIFI_H
 #define PERCEVITE_WIFI_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "mcu_periph/uart.h"
 
 #define ESP_UART_PORT uart2
@@ -46,6 +50,7 @@ typedef enum {
   ESP_SYNC = 0,
   ESP_DRONE_INFO,
   ESP_DRONE_DATA,
+  ESP_ERR_CHK,
   ESP_RX_OK,
   ESP_RX_ERR
 } esp_state_t;
@@ -79,6 +84,10 @@ typedef struct __attribute__((packed)){
 extern void esp_event_uart_rx(void);
 extern void uart_esp_init(void);
 extern void uart_esp_loop(void);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif
 
