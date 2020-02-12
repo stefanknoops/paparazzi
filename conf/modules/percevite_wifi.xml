@@ -8,7 +8,7 @@
     <file name="percevite_wifi.h"/>
   </header>
   <init fun="uart_esp_init()"/>
-  <periodic fun="uart_esp_loop()" freq="2" autorun="TRUE"/>
+  <periodic fun="uart_esp_loop()" freq="0.5" autorun="TRUE"/>
   <event fun="esp_event_uart_rx()"/>
   <makefile>
     <file name="percevite_wifi.c"/>
