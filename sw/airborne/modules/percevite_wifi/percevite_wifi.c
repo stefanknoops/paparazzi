@@ -1,5 +1,5 @@
 /*
- * Copyright (C) nilay
+ * Copyright (C) nilay994
  *
  * This file is part of paparazzi
  *
@@ -19,18 +19,15 @@
  */
 /**
  * @file "modules/percevite_wifi/percevite_wifi.c"
- * @author nilay
+ * @author nilay_994@hotmail.com
  * wifi ssid broadcast
  */
 
 /**************************************************************************************
- * CURRENTLY INCONSISTENT
- * | Startbyte(0) | DroneID (1-2) | North (3-8)     | East (9-14)     | Down (15-20)    | Heading (20-25) | Endbytes (26-27) |
- * |--------------|---------------|-----------------|-----------------|-----------------|-----------------|------------------|
- * | '$' (char)   | 1 bytes (char)| 4 bytes (float) | 4 bytes (float) | 4 bytes (float) | 4 bytes (float) | '*'0 (char)      |
- * |                                                                                                                         |
- * |--------------ESP-------------|--------------PPRZ----------PPRZ-----------------PPRZ----------------------PPRZ-----------|
- *  This firmware only sends the middle 4*6 bytes to ESP, header of the packet is encoded by ESP32
+| Startbytes(0-1)  | DroneID (2) | PacketType (3) | PacketLength (4) | Pos x,y,z (5 - 16) | heading (17 - 21) | Vel x,y,z (21 - 32) | 33                    |
+|------------------|-------------|----------------|------------------|--------------------|-------------------|---------------------|-----------------------|
+| 0x24, 0xB2 (hex) | 0x00 NA     | ACK/DATA       | 0 to 64          | 4 bytes (float)    | 4 bytes (float)   | 4 bytes (float)     | checksum (drone data) |
+| UART append      | Drone Info  | Drone Info     | Drone Info       | Drone Data         | Drone Data        | Drone Data          | UART append           |
  * ************************************************************************************/
 
 #include <stdio.h>
@@ -39,6 +36,8 @@
 #include "modules/percevite_wifi/percevite_wifi.h"
 #include "subsystems/datalink/telemetry.h"
 #include "state.h"
+
+// #define DBG
 
 drone_data_t dr_data[MAX_DRONES];
 uint8_t esp_state = ESP_SYNC;
@@ -62,7 +61,10 @@ static uint8_t esp_send_string(uint8_t *s, uint8_t len) {
 			checksum += s[i];
 		}
 	}
-	printf("appended checksum while bbp tx: 0x%02x\n", checksum);
+	#ifdef DBG
+		printf("appended checksum while bbp tx: 0x%02x\n", checksum);
+	#endif
+	
 	uart_put_byte(&(ESP_UART_PORT), 0, checksum);
 
 	return (i+3);
@@ -78,36 +80,31 @@ static void tx_struct(uart_packet_t *uart_packet) {
 	// copy packed struct into a string
 	memcpy(tx_string, uart_packet, sizeof(uart_packet_t));
 
+	#ifdef DBG
 	printf("ssid should be:\n");
 	for (int i = 0; i < sizeof(uart_packet_t); i++) {
 		printf("0x%02x,", tx_string[i]);
 	}
 	printf("\n*******\n");
-
+	#endif 
 	// send "stringed" struct
 	esp_send_string(tx_string, sizeof(uart_packet_t));
 	
 }
 
 // rx: print struct received after checksum match
-static void print_drone_data_struct(drone_data_t *dat) {
-	printf("dat->pos.x: %f, dat->pos.y: %f, dat->pos.z: %f\n"
+static void print_drone_struct(uart_packet_t *uart_packet_rx) {
+	printf("info->drone_id: %d, info->packet_type: %d, info->packet_length: %d\n"
+				 "dat->pos.x: %f, dat->pos.y: %f, dat->pos.z: %f\n"
 				 "dat->heading: %f\n"
 				 "dat->vel.x: %f, dat->vel.y: %f, dat->vel.z: %f\n",
-					dat->pos.x, dat->pos.y,	dat->pos.z,
-					dat->heading,
-					dat->vel.x,	dat->vel.y, dat->vel.z);
+				 	uart_packet_rx->info.drone_id, uart_packet_rx->info.packet_type, uart_packet_rx->info.packet_length,
+					uart_packet_rx->data.pos.x, uart_packet_rx->data.pos.y,	uart_packet_rx->data.pos.z,
+					uart_packet_rx->data.heading,
+					uart_packet_rx->data.vel.x, uart_packet_rx->data.vel.y, uart_packet_rx->data.vel.z);
 }
 
-// rx: receive drone_data in a string
-static void rx_struct(drone_data_t *dr_dat, uint8_t* buf) {
-	memcpy(dr_dat, buf, sizeof(drone_data_t));
-	print_drone_data_struct(dr_dat);
-}
-
-// null terminated at the end is fine for memcpy
 uint8_t localbuf[ESP_MAX_LEN] = {0};
-
 // rx: parse other drone ids that are reported by esp32
 static void esp_parse(uint8_t c) {
 
@@ -117,9 +114,12 @@ static void esp_parse(uint8_t c) {
 	static uint8_t packet_type = 0;
 	static uint8_t checksum = 0;
 	static uint8_t prev_char = 0;
-
+	
+	#ifdef DBG
   printf("esp_state: %d, char rxed: 0x%02x\n", esp_state, c);
-  switch (esp_state) {
+	#endif
+  
+	switch (esp_state) {
     case ESP_SYNC: {
 
 			/* first char, sync string */
@@ -184,7 +184,7 @@ static void esp_parse(uint8_t c) {
 				checksum += localbuf[byte_ctr - st_byte_pos];
 				
 				byte_ctr = byte_ctr + 1;
-				// printf("byte_ctr: %d, idx: %d\n", byte_ctr, byte_ctr - st_byte_pos);		
+
 			}
 
 			/* after receiving the msg, terminate ssid string */
@@ -197,7 +197,9 @@ static void esp_parse(uint8_t c) {
 		case ESP_ERR_CHK: {
 			/* check if last packet matches your checksum */
 			if (c == checksum) {
+				#ifdef DBG
 				printf("[uart] checksum matched!\n");
+				#endif
 				esp_state = ESP_RX_OK;
 			}
 			else {
@@ -207,13 +209,28 @@ static void esp_parse(uint8_t c) {
 
     case ESP_RX_OK: {
 
+			#ifdef DBG
+			printf("\n [uart] received string: ");
 			// print string
-			// for (int i = 0; i<packet_length; i++) {
-			// 	printf("0x%02x,", localbuf[i]);
-			// }
+			for (int i = 0; i<packet_length; i++) {
+				printf("0x%02x,", localbuf[i]);
+			}
+			#endif
 
-			/* checksum matches, proceed to populate the struct */
-			rx_struct(&dr_data[drone_id], localbuf);
+			/* checksum matches, proceed to populate the info struct */
+			uart_packet_t uart_packet_rx = {
+				.info = {
+					.drone_id = drone_id,
+					.packet_type = packet_type,
+					.packet_length = packet_length,
+				},			
+			};
+			/* checksum matches, proceed to populate the data struct */
+			memcpy(&dr_data[drone_id], &localbuf, sizeof(drone_data_t));
+			uart_packet_rx.data = dr_data[drone_id];
+
+			print_drone_struct(&uart_packet_rx);
+
 			checksum = 0;
 
 			/* reset state machine */
@@ -221,15 +238,18 @@ static void esp_parse(uint8_t c) {
 
 		} break;
     case ESP_RX_ERR: {
-						printf("[uart] ESP_RX_ERR\n");
-						byte_ctr = 0;
-						checksum = 0;
-						/* reset state machine, string terminated earlier than expected */
-						esp_state = ESP_SYNC;
+			#ifdef DBG
+			printf("[uart] ESP_RX_ERR\n");
+			#endif
+			byte_ctr = 0;
+			checksum = 0;
+			/* reset state machine, string terminated earlier than expected */
+			esp_state = ESP_SYNC;
     } break;
     default: {
-						byte_ctr = 0;
-						esp_state = ESP_SYNC;
+			byte_ctr = 0;
+			checksum = 0;
+			esp_state = ESP_SYNC;
 		} break;
   }
 
@@ -251,7 +271,6 @@ void esp_event_uart_rx(void) {
 		uint8_t ch = uart_getch(&(ESP_UART_PORT));
 		esp_parse(ch);
 	}
-
 }
 
 // init: clear all data for all drones
@@ -321,7 +340,6 @@ void uart_esp_loop() {
 	//}	
 
 }
-
 
 /*
 

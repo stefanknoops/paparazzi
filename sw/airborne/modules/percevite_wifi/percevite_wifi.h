@@ -35,10 +35,10 @@ extern "C" {
 #define ESP_UART_PORT uart2
 
 // Enter ID for drone number (0/1)
-#define SELF_ID 1
+#define SELF_ID 4
 
 #define ESP_MAX_LEN 50 // lat,long,alt,bearing = 51 bytes max (28 currently)
-#define MAX_DRONES 2   // maximum drones in ESP32's range
+#define MAX_DRONES 5   // maximum drones in ESP32's range
 
 typedef enum {
   ACK_FRAME = 0,
