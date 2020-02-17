@@ -86,7 +86,7 @@ static void tx_struct(uart_packet_t *uart_packet) {
 		printf("0x%02x,", tx_string[i]);
 	}
 	printf("\n*******\n");
-	#endif 
+	#endif
 	// send "stringed" struct
 	esp_send_string(tx_string, sizeof(uart_packet_t));
 	
@@ -94,14 +94,15 @@ static void tx_struct(uart_packet_t *uart_packet) {
 
 // rx: print struct received after checksum match
 static void print_drone_struct(uart_packet_t *uart_packet_rx) {
-	printf("info->drone_id: %d, info->packet_type: %d, info->packet_length: %d\n"
-				 "dat->pos.x: %f, dat->pos.y: %f, dat->pos.z: %f\n"
-				 "dat->heading: %f\n"
-				 "dat->vel.x: %f, dat->vel.y: %f, dat->vel.z: %f\n",
-				 	uart_packet_rx->info.drone_id, uart_packet_rx->info.packet_type, uart_packet_rx->info.packet_length,
-					uart_packet_rx->data.pos.x, uart_packet_rx->data.pos.y,	uart_packet_rx->data.pos.z,
-					uart_packet_rx->data.heading,
-					uart_packet_rx->data.vel.x, uart_packet_rx->data.vel.y, uart_packet_rx->data.vel.z);
+	// printf("info->drone_id: %d, info->packet_type: %d, info->packet_length: %d\n"
+	// 			 "dat->pos.x: %f, dat->pos.y: %f, dat->pos.z: %f\n"
+	// 			 "dat->heading: %f\n"
+	// 			 "dat->vel.x: %f, dat->vel.y: %f, dat->vel.z: %f\n",
+	// 			 	uart_packet_rx->info.drone_id, uart_packet_rx->info.packet_type, uart_packet_rx->info.packet_length,
+	// 				uart_packet_rx->data.pos.x, uart_packet_rx->data.pos.y,	uart_packet_rx->data.pos.z,
+	// 				uart_packet_rx->data.heading,
+	// 				uart_packet_rx->data.vel.x, uart_packet_rx->data.vel.y, uart_packet_rx->data.vel.z);
+	printf("info->drone_id: %d, dat->pos.x: %f\n", uart_packet_rx->info.drone_id, uart_packet_rx->data.pos.x);
 }
 
 uint8_t localbuf[ESP_MAX_LEN] = {0};
@@ -149,7 +150,7 @@ static void esp_parse(uint8_t c) {
 				byte_ctr = byte_ctr + 1;
 
 				// info frame populated!! 
-				printf("[uart] packet_length: %d, packet_type: %d, drone_id: %d\n", packet_length, packet_type, drone_id);
+				// printf("[uart] packet_length: %d, packet_type: %d, drone_id: %d\n", packet_length, packet_type, drone_id);
 
 				if (packet_type == ACK_FRAME && packet_length == 4) {
 					// TODO: esp received ssid change signal and sent you ack, 
@@ -303,13 +304,15 @@ void uart_esp_init() {
 	printf("sizeof(drone_info_t) = %d\n", sizeof(drone_info_t));
 }
 
-// frequency: once every two seconds
+// frequency: twice every second
 void uart_esp_loop() {
 
 	// TODO: send these over instead of hardcoded
 	struct NedCoor_f *optipos = stateGetPositionNed_f();
 	struct NedCoor_f *optivel = stateGetSpeedNed_f();
 	struct FloatEulers *att = stateGetNedToBodyEulers_f();
+
+	static float ctr_trm = 1.4;
 
 	uart_packet_t uart_packet = {
 		.info = {
@@ -332,7 +335,11 @@ void uart_esp_loop() {
 		},
 	};
 
+	uart_packet.data.pos.x = ctr_trm;
+
 	tx_struct(&uart_packet);
+
+	ctr_trm = ctr_trm + 1;
 
 	// mutex, don't tx to esp when ack is being sent
   // if (esp.state!= ESP_RX_OK) {
