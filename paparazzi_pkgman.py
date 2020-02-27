@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Hoi Stefan - Hoi Max!
+#Nog een test van Stefan
 #
 # Copyright (C) 2012-2014 The Paparazzi Team
 #
