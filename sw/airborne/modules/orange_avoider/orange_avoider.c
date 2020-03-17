@@ -86,6 +86,7 @@ void orange_avoider_periodic()
 {
   // Check the amount of orange. If this is above a threshold
   // you want to turn a certain amount of degrees
+  // hier moeten we dan veranderen wat we precies als safe zien
   safeToGoForwards = color_count < tresholdColorCount;
   VERBOSE_PRINT("Color_count: %d  threshold: %d safe: %d \n", color_count, tresholdColorCount, safeToGoForwards);
   float moveDistance = fmin(maxDistance, 0.05 * trajectoryConfidence);

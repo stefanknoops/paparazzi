@@ -24,7 +24,7 @@ def rescale_frame(frame, percent=25):
     return cv2.resize(frame, dim, interpolation =cv2.INTER_AREA)
 
 #load images
-filenames = [img for img in glob.glob("/home/daan/Documents/AE4317_2019_datasets/sim_poles/simulation/*.jpg")]
+filenames = [img for img in glob.glob("/home/daan/Documents/AE4317_2019_datasets/cyberzoo_poles/20190121-135009/*.jpg")]
 
 #filenames = [img for img in glob.glob("/home/daan/Documents/AE4317_2019_datasets/cyberzoo_poles_panels/20190121-140205/*.jpg")]
 

@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 import glob
 
 #load images
-images = [cv2.imread(file) for file in glob.glob("/home/daan/Documents/AE4317_2019_datasets/sim_poles/20190121-160844/*.jpg")]
+images = [cv2.imread(file) for file in glob.glob("/home/stefan/Documents/MAV/AE4317_2019_datasets/sim_poles/20190121-160844/*.jpg")]
 plt.imshow(images[4], cmap = 'gray', interpolation = 'bicubic')
 plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
 plt.show()
@@ -39,7 +39,6 @@ while(1):
     next = cv2.cvtColor(frame2,cv2.COLOR_BGR2GRAY)
 
     flow = cv2.calcOpticalFlowFarneback(prvs,next, None, 0.5, 3, 15, 3, 5, 1.2, 0)
-    pause
     mag, ang = cv2.cartToPolar(flow[...,0], flow[...,1])
     hsv[...,0] = ang*180/np.pi/2
     hsv[...,2] = cv2.normalize(mag,None,0,255,cv2.NORM_MINMAX)
