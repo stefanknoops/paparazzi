@@ -3,8 +3,10 @@
 #include "modules/computer_vision/lib/vision/image.h"
 
 using namespace std;
-#include <opencv2/core/core.hpp>
+#include <opencv2/core/core.hpp>			//Hier staan de cart2polar en normalize in
 #include <opencv2/cudaoptflow/include/optflow.hpp>
+#include "opencv2/video/tracking.hpp"		//Hier staat de farneback methode in
+#include "opencv2/imgproc/imgproc.hpp"		//Hier staan de resize en cvtcolor in
 // hier moet de juiste opencv functie nog worden toegevoegd
 
 
