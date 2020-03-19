@@ -38,8 +38,12 @@ double poly_sigma = 1.1 //standard deviation of the Gaussian that is used to smo
 
 // hier farneback doen
 // waardes van Daan voor nu gebruiken?
-void calcOpticalFlowFarneback(InputArray prev, InputArray next, InputOutputArray flow, double pyr_scale, int levels, int winsize, int iterations, int poly_n, double poly_sigma) {
+struct image_t *farneback(struct image_t *img);
+struct image_t *farneback(struct image_t *img)
+{
+    opt_flow = calcOpticalFlowFarneback(InputArray prev, InputArray next, InputOutputArray flow, double pyr_scale, int levels, int winsize, int iterations, int poly_n, double poly_sigma) {
     flow_im = flow;
+
 }
 
 
