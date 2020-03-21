@@ -5,10 +5,11 @@
 using namespace std;
 #include <opencv2/core/core.hpp>			//Hier staan de cart2polar en normalize in
 #include <opencv2/cudaoptflow/include/optflow.hpp>
-#include "opencv2/video/tracking.hpp"		//Hier staat de farneback methode in
-#include "opencv2/imgproc/imgproc.hpp"		//Hier staan de resize en cvtcolor in
+#include <opencv2/video/tracking.hpp>		//Hier staat de farneback methode in
+#include <opencv2/imgproc/imgproc.hpp>		//Hier staan de resize en cvtcolor in
 // hier moet de juiste opencv functie nog worden toegevoegd
 
+using namespace cv;
 
 #ifndef FARNEBACK_FPS
 #define FARNEBACK_FPS 0       ///< Default FPS (zero means run at camera fps)
@@ -38,8 +39,14 @@ double poly_sigma = 1.1 //standard deviation of the Gaussian that is used to smo
 
 // hier farneback doen
 // waardes van Daan voor nu gebruiken?
-void calcOpticalFlowFarneback(InputArray prev, InputArray next, InputOutputArray flow, double pyr_scale, int levels, int winsize, int iterations, int poly_n, double poly_sigma) {
+struct image_t *farneback_func(struct image_t *img)
+{
+
+    flow = calcOpticalFlowFarneback(struct image_t prev, struct image_t current, InputOutputArray flow, double pyr_scale, int levels, int winsize, int iterations, int poly_n, double poly_sigma) 
     flow_im = flow;
+
+
+    prev = 
 }
 
 
