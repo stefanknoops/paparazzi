@@ -64,6 +64,9 @@ const int16_t max_trajectory_confidence = 5; // number of consecutive negative o
 #ifndef ORANGE_AVOIDER_VISUAL_DETECTION_ID
 #define ORANGE_AVOIDER_VISUAL_DETECTION_ID ABI_BROADCAST
 #endif
+
+//deze functie moet vervangen worden door de farneback
+//dit 
 static abi_event color_detection_ev;
 static void color_detection_cb(uint8_t __attribute__((unused)) sender_id,
                                int16_t __attribute__((unused)) pixel_x, int16_t __attribute__((unused)) pixel_y,
@@ -112,7 +115,7 @@ void orange_avoider_periodic(void)
   Bound(obstacle_free_confidence, 0, max_trajectory_confidence);
 
   float moveDistance = fminf(maxDistance, 0.2f * obstacle_free_confidence);
-
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   switch (navigation_state){
     case SAFE:
       // Move waypoint forward

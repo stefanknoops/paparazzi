@@ -1,0 +1,16 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="farneback_avoider">
+  <doc>
+    <description>Adaption of orange avoider in order to use the Farneback method</description>
+  </doc>
+  <header>
+    <file name="farneback_avoider.h"/>
+  </header>
+  <init fun="farneback_init()"/>
+  <periodic fun="farneback_periodic" freq="5" autorun="TRUE"/>
+  <makefile>
+    <file name="farneback_avoider.c"/>
+  </makefile>
+</module>
+

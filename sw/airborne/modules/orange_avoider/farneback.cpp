@@ -11,7 +11,7 @@ using namespace std;
 
 using namespace cv;
 
-#ifndef FARNEBACK_FPS
+#ifndef FARNEBACK_FPS 
 #define FARNEBACK_FPS 0       ///< Default FPS (zero means run at camera fps)
 #endif
 PRINT_CONFIG_VAR(FARNEBACK_FPS)
@@ -39,7 +39,7 @@ double poly_sigma = 1.1 //standard deviation of the Gaussian that is used to smo
 
 // hier farneback doen
 // waardes van Daan voor nu gebruiken?
-struct image_t *farneback_func(struct image_t *img)
+struct flow_t *farneback_func(struct image_t *img)
 {
 
     flow = calcOpticalFlowFarneback(struct image_t prev, struct image_t current, InputOutputArray flow, double pyr_scale, int levels, int winsize, int iterations, int poly_n, double poly_sigma) 
@@ -47,6 +47,11 @@ struct image_t *farneback_func(struct image_t *img)
 
 
     prev = 
+    //de flow vector en het formaat daarvan (count) moet ergens worden opgeslagen
+    //wat hier moet gebeuren
+    //is zorgen dat de flow uitvoer in een formaat komt wat overeenkomt met het flow_t van paparazzi
+    //https://docs.opencv.org/2.4/modules/video/doc/motion_analysis_and_object_tracking.html
+    //http://docs.paparazziuav.org/v5.10/image_8h.html#structflow__t
 }
 
 
