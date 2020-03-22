@@ -61,19 +61,16 @@ float maxDistance = 2.25;               // max waypoint displacement [m]
 
 const int16_t max_trajectory_confidence = 5; // number of consecutive negative object detections to be sure we are obstacle free
 
-#ifndef ORANGE_AVOIDER_VISUAL_DETECTION_ID
-#define ORANGE_AVOIDER_VISUAL_DETECTION_ID ABI_BROADCAST
+#ifndef FARNEBACK_AVOIDER_VISUAL_DETECTION_ID
+#define FARNEBACK_AVOIDER_VISUAL_DETECTION_ID ABI_BROADCAST
 #endif
+int16_t obj_free_threshold = 10; //trial and error
+int16_t ttc_horizon = 3; //hoe dichtbij moet iets zijn om te beginnen met ontwijken
 
-//deze functie moet vervangen worden door de farneback
-//dit 
-static abi_event color_detection_ev;
-static void color_detection_cb(uint8_t __attribute__((unused)) sender_id,
-                               int16_t __attribute__((unused)) pixel_x, int16_t __attribute__((unused)) pixel_y,
-                               int16_t __attribute__((unused)) pixel_width, int16_t __attribute__((unused)) pixel_height,
-                               int32_t quality, int16_t __attribute__((unused)) extra)
+static abi_event ttc_ev;
+static void call_ttc_cb(float ttc)
 {
-  color_count = quality;
+  int safe_time = ttc;
 }
 
 /*
@@ -86,7 +83,8 @@ void orange_avoider_init(void)
   chooseRandomIncrementAvoidance();
 
   // bind our colorfilter callbacks to receive the color filter outputs
-  AbiBindMsgVISUAL_DETECTION(ORANGE_AVOIDER_VISUAL_DETECTION_ID, &color_detection_ev, color_detection_cb);
+  // TODO: abi VISUAL DETECTION message aanpassen in abi.xml
+  AbiBindMsgVISUAL_DETECTION(FARNEBACK_AVOIDER_VISUAL_DETECTION_ID, &ttc_ev, call_ttc_cb);
 }
 
 /*
@@ -99,13 +97,12 @@ void orange_avoider_periodic(void)
     return;
   }
 
-  // compute current color thresholds
-  int32_t color_count_threshold = oa_color_count_frac * front_camera.output_size.w * front_camera.output_size.h;
 
-  VERBOSE_PRINT("Color_count: %d  threshold: %d state: %d \n", color_count, color_count, navigation_state);
 
-  // update our safe confidence using color threshold
-  if(color_count < color_count_threshold){
+  VERBOSE_PRINT("TTC: %d  TTC horizon: %d state: %d \n", safe_time, ttc_horizon, navigation_state);
+
+  // update our safe confidence using ttc horizon
+  if(safe_time > ttc_horizon){
     obstacle_free_confidence++;
   } else {
     obstacle_free_confidence -= 2;  // be more cautious with positive obstacle detections

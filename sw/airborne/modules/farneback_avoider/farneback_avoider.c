@@ -47,18 +47,16 @@ int im_width = front_camera.output_size.w; //dit werkt wss niet
 int im_height = front_camera.output_size.h;
 struct linear_flow_fit_info *info;
   
-
+bool new_ttc = false
 static float call_ttc(struct image_t *img) { //video callback function
   struct flow_t *vectors = farneback_func(struct image_t *img,struct image_t *prev_img) 
   //linear_flow_fit
   if analyze_linear_flow_field(struct flow_t *vectors, int count, float error_threshold, int n_iterations, int n_samples, int im_width, int im_height, struct linear_flow_fit_info *info)
   {
   ttc_temp = info->time_to_contact;
+  new_ttc = true
   }
-  else
-  {
-  //wat als hij geen fit vind?
-  }
+ 
   
   pthread_mutex_lock(&mutex);
   ttc  =  ttc_temp;
@@ -82,29 +80,16 @@ void farneback_init(struct image_t *img) {
 
 void farneback_periodic()
 {
- 
-
-  //de flow met een threshold vergelijken
-
-
-  //de navigatie kopieren van orange_avoider
-
-  
-
-  static struct color_object_t local_filters[2];
+   static struct color_object_t local_filters[2];
   pthread_mutex_lock(&mutex);
   memcpy(local_filters, global_filters, 2*sizeof(struct color_object_t));
   pthread_mutex_unlock(&mutex);
 
-  if(local_filters[0].updated){
-    AbiSendMsgVISUAL_DETECTION(COLOR_OBJECT_DETECTION1_ID, local_filters[0].x_c, local_filters[0].y_c,
-        0, 0, local_filters[0].color_count, 0);
-    local_filters[0].updated = false;
-  }
-  if(local_filters[1].updated){
-    AbiSendMsgVISUAL_DETECTION(COLOR_OBJECT_DETECTION2_ID, local_filters[1].x_c, local_filters[1].y_c,
-        0, 0, local_filters[1].color_count, 1);
-    local_filters[1].updated = false;
+  //is deze if hier nodig? Zo ja moeten we de conditie ergens updaten
+  //de local filters moeten eruit want die gebruiken we niet
+  if(new_ttc){
+    AbiSendMsgVISUAL_DETECTION(FARNEBACK_OBJECT_DETECTION_ID, ttc);
+    new_ttc = false;
   }
 }
 
