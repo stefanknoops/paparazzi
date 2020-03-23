@@ -30,6 +30,14 @@
 #include "modules/computer_vision/cv.h"
 #include "subsystems/abi.h"
 #include "std.h"
+#include <opencv/cv.h>
+#include <opencv2/core/core_c.h>
+#include <opencv2/imgproc/imgproc_c.h>
+#include <opencv2/video/tracking_c.h>
+#include <opencv2/core/types_c.h>
+#include <opencv2/imgproc/imgproc_c.h>
+#include "farneback_cpp.h"
+
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -97,6 +105,39 @@ static struct image_t *object_detector(struct image_t *img, uint8_t filter)
   uint8_t cb_min, cb_max;
   uint8_t cr_min, cr_max;
   bool draw;
+
+  check_farneback();
+  // Transform image buffer img into an OpenCV YUV422 Mat
+  int width = img->w;
+  int height = img->h;
+
+  printf("%d \t %d", width, height);
+  CvMat mat = cvMat(height, width, CV_8UC2, img);
+  CvMat* new = cvCreateMat(height, width, CV_8UC3);
+
+  const CvMat* newmat = &mat;
+
+
+  cvCvtColor(newmat, new, CV_YUV2BGR_Y422);
+
+
+  // Convert to OpenCV BGR
+  printf("%d \t %d", width, height);
+
+
+  int a = 5;
+  float pyr_scale = 0.5;
+  int levels = 3;
+  int winsize = 15;
+  int iterations = 10;
+  int poly_n = 7;
+  int poly_sigma = 1.2;
+  int flags = 0;
+  const CvMat* prev = newmat;
+  const CvMat* next = newmat;
+  CvMat* flow = cvCreateMat(height, width, CV_32FC2);
+
+  cvCalcOpticalFlowFarneback(prev, next, flow, pyr_scale, levels, winsize, iterations, poly_n, poly_sigma, flags);
 
   switch (filter){
     case 1:

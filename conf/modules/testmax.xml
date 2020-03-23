@@ -1,0 +1,15 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="testmax" dir="testmaxtest">
+  <doc>
+    <description>testing module creator</description>
+  </doc>
+  <header>
+    <file name="testmax.h"/>
+  </header>
+  <init fun="max_init"/>
+  <makefile>
+    <file name="testmax.c"/>
+  </makefile>
+</module>
+

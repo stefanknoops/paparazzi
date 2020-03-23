@@ -1,0 +1,16 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="farneback_cpp" dir="computer_vision">
+  <doc>
+    <description>using the farneback method for bebop in cpp</description>
+  </doc>
+  <header>
+    <file name="farneback_cpp.h"/>
+  </header>
+  <periodic fun="periodic" freq="1"/>
+  <event fun="check_farneback"/>
+  <makefile>
+    <file name="farneback_cpp.c"/>
+  </makefile>
+</module>
+

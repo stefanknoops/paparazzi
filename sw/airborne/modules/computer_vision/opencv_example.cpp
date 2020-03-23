@@ -40,7 +40,7 @@ int opencv_example(char *img, int width, int height)
   // Create a new image, using the original bebop image.
   Mat M(height, width, CV_8UC2, img);
   Mat image;
-
+  printf("Hello World";)
 #if OPENCVDEMO_GRAYSCALE
   //  Grayscale image example
   cvtColor(M, image, CV_YUV2GRAY_Y422);
