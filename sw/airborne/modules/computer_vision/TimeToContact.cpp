@@ -8,9 +8,11 @@ using namespace std;
 #include <opencv2/highgui.hpp>
 #include <opencv2/videoio.hpp>
 #include <stdio.h>
+#include <iostream>
+#include "modules/computer_vision/opticflow/linear_flow_fit.h"
 
 using namespace cv;
-Mat* prev_image;
+Mat prev_image;
 
 
 int opencv_example(char *img, int width, int height)
@@ -18,23 +20,53 @@ int opencv_example(char *img, int width, int height)
 	 // Create a new image, using the original bebop image.
 	 Mat M(height, width, CV_8UC2, img);
 	 Mat image;
+	 Mat image1 = imread("/home/daan/github/sw/airborne/modules/computer_vision/frame1.jpg", 0);
+	 Mat image2 = imread("/home/daan/github/sw/airborne/modules/computer_vision/frame2.jpg", 0);
 
 	 //  Grayscale image example
 	 cvtColor(M, image, CV_YUV2GRAY_Y422);
 
-	 if (prev_image == NULL){
-		 prev_image = &image;
+	 if (prev_image.empty()){
+		 prev_image = image;
 	 	 }
 
-	 printf("%d", 5);
+	 //printf("%d", 5);
 	 Mat flow, cflow, frame;
-	 UMat gray, prevgray, uflow;
+	 Mat gray, prevgray, uflow;
 
-	 calcOpticalFlowFarneback(*prev_image, image, uflow, 0.5, 3, 15, 3, 5, 1.2, 0);
+	 calcOpticalFlowFarneback(prev_image, image, uflow, 0.5, 3, 15, 3, 5, 1.2, 0);
+	 //calcOpticalFlowFarneback(image1, image2, uflow, 0.5, 3, 15, 3, 5, 1.2, 0);
+	 prev_image = image;
 
-	 prev_image = &image;
+	 float c1 = uflow.at<Vec2f>(100,100)[0];
+	 printf(" %f \n", c1);
+	 // fill struct with flow vectors
+	 struct flow_t vectors[uflow.cols * uflow.rows];
+	 struct flow_t *vectors_ptr;
+	 vectors_ptr = vectors;
 
-	 //float test = uflow.row(0).col(0);
-	 //printf("%d", test);
+	 //optimise this if necessary
+	 for (int i=0 ; i< (uflow.rows); i++){
+		 for(int j = 0; j < (uflow.cols) ;j++){
+		 vectors_ptr[j + i * uflow.cols].pos.x = j;
+		 vectors_ptr[j + i * uflow.cols].pos.y = i;
+		 vectors_ptr[j + i * uflow.cols].flow_x = uflow.at<Vec2f>(i,j)[0];
+		 vectors_ptr[j + i * uflow.cols].flow_y = uflow.at<Vec2f>(i,j)[1];
+		 }
+		 //printf("pos x %d \n", vectors[3 + i * uflow.cols].pos.x);
+	 }
+
+	 printf("flow in x: %d \n", vectors_ptr[23860].flow_x);
+	 //struct flow_t *vectors_ptr = &vectors;
+	 //struct flow_t *vectors_ptr;
+	 int count = int(uflow.cols * uflow.rows);
+	 float error_threshold = 10.0;
+	 int n_iterations = 100 ;
+	 int n_samples = 25;
+	 int im_width = uflow.cols; //not sure about this, check how reference frame is defined
+	 int im_height = uflow.rows;
+	 struct linear_flow_fit_info *info;
+	 //analyze_linear_flow_field(vectors_ptr, count, error_threshold, n_iterations, n_samples, im_width, im_height, info);
+
 	return 0;
 }
