@@ -26,6 +26,7 @@ int opencv_example(char *img, int width, int height)
 	 //  Grayscale image example
 	 cvtColor(M, image, CV_YUV2GRAY_Y422);
 
+	 resize(image, image,Size(60,130),0,0,INTER_NEAREST);
 	 if (prev_image.empty()){
 		 prev_image = image;
 	 	 }
