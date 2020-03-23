@@ -36,7 +36,7 @@
 #include <opencv2/video/tracking_c.h>
 #include <opencv2/core/types_c.h>
 #include <opencv2/imgproc/imgproc_c.h>
-#include "farneback_cpp.h"
+#include "modules/computer_vision/farneback_cpp.h"
 
 
 #include <stdio.h>
