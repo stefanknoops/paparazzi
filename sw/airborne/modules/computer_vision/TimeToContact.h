@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-int opencv_example(char *img, int width, int height);
+struct flow_t* opencv_example(char *img, int width, int height);
 
 #ifdef __cplusplus
 }

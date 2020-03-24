@@ -30,6 +30,7 @@
 #include "modules/computer_vision/opencv_example2.h"
 #include "modules/computer_vision/TimeToContact.h"
 #include <stdio.h>
+#include "modules/computer_vision/opticflow/linear_flow_fit.h"
 
 #ifndef OPENCVDEMO_FPS
 #define OPENCVDEMO_FPS 0       ///< Default FPS (zero means run at camera fps)
@@ -41,11 +42,25 @@ PRINT_CONFIG_VAR(OPENCVDEMO_FPS)
 struct image_t *opencv_func(struct image_t *img);
 struct image_t *opencv_func(struct image_t *img)
 {
+  //image_yuv422_downsample(img,img,16);
 
   if (img->type == IMAGE_YUV422) {
     // Call OpenCV (C++ from paparazzi C function)
-    opencv_example((char *) img->buf, img->w, img->h);
+    struct flow_t *vector_ptr = opencv_example((char *) img->buf, img->w, img->h);
+
+    int count = img->w * img->h;
+    float error_threshold = 10.0;
+    int n_iterations = 100 ;
+    int n_samples = 1000;
+    int im_width = img->w; //not sure about this, check how reference frame is defined
+    int im_height = img->h;
+    struct linear_flow_fit_info info;
+    struct linear_flow_fit_info *info_ptr;
+	info_ptr = &info;
+    bool test = analyze_linear_flow_field(vector_ptr, count, error_threshold, n_iterations, n_samples, im_width, im_height, &info);
   }
+
+
 
 // opencv_example(NULL, 10,10);
 
