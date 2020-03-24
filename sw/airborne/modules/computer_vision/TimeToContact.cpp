@@ -15,23 +15,24 @@ using namespace cv;
 Mat prev_image;
 
 
-int opencv_example(char *img, int width, int height)
+struct flow_t* opencv_example(char *img, int width, int height)
 {
 	 // Create a new image, using the original bebop image.
 	 Mat M(height, width, CV_8UC2, img);
 	 Mat image;
-	 Mat image1 = imread("/home/daan/github/sw/airborne/modules/computer_vision/frame1.jpg", 0);
-	 Mat image2 = imread("/home/daan/github/sw/airborne/modules/computer_vision/frame2.jpg", 0);
+	 //Mat image1 = imread("/home/daan/github/sw/airborne/modules/computer_vision/frame1.jpg", 0);
+	 //Mat image2 = imread("/home/daan/github/sw/airborne/modules/computer_vision/frame2.jpg", 0);
+
 
 	 //  Grayscale image example
 	 cvtColor(M, image, CV_YUV2GRAY_Y422);
+	 //resize(image,image,Size(60,130),0,0,INTER_NEAREST);
 
-	 resize(image, image,Size(60,130),0,0,INTER_NEAREST);
+
 	 if (prev_image.empty()){
 		 prev_image = image;
 	 	 }
 
-	 //printf("%d", 5);
 	 Mat flow, cflow, frame;
 	 Mat gray, prevgray, uflow;
 
@@ -39,7 +40,7 @@ int opencv_example(char *img, int width, int height)
 	 //calcOpticalFlowFarneback(image1, image2, uflow, 0.5, 3, 15, 3, 5, 1.2, 0);
 	 prev_image = image;
 
-	 float c1 = uflow.at<Vec2f>(100,100)[0];
+	 float c1 = uflow.at<Vec2f>(50,50)[0];
 	 printf(" %f \n", c1);
 	 // fill struct with flow vectors
 	 struct flow_t vectors[uflow.cols * uflow.rows];
@@ -54,10 +55,9 @@ int opencv_example(char *img, int width, int height)
 		 vectors_ptr[j + i * uflow.cols].flow_x = uflow.at<Vec2f>(i,j)[0];
 		 vectors_ptr[j + i * uflow.cols].flow_y = uflow.at<Vec2f>(i,j)[1];
 		 }
-		 //printf("pos x %d \n", vectors[3 + i * uflow.cols].pos.x);
 	 }
-
-	 printf("flow in x: %d \n", vectors_ptr[23860].flow_x);
+	 /*
+	 //printf("flow in x: %d \n", vectors_ptr[23860].flow_x);
 	 //struct flow_t *vectors_ptr = &vectors;
 	 //struct flow_t *vectors_ptr;
 	 int count = int(uflow.cols * uflow.rows);
@@ -67,7 +67,7 @@ int opencv_example(char *img, int width, int height)
 	 int im_width = uflow.cols; //not sure about this, check how reference frame is defined
 	 int im_height = uflow.rows;
 	 struct linear_flow_fit_info *info;
-	 //analyze_linear_flow_field(vectors_ptr, count, error_threshold, n_iterations, n_samples, im_width, im_height, info);
-
-	return 0;
+	 analyze_linear_flow_field(vectors_ptr, count, error_threshold, n_iterations, n_samples, im_width, im_height, info);
+	*/
+	return vectors_ptr;
 }
