@@ -25,9 +25,10 @@ struct flow_t* opencv_example(char *img, int width, int height)
 
 
 	 //  Grayscale image example
+	 resize(M,M,Size(60,130),0,0,INTER_NEAREST);
 	 cvtColor(M, image, CV_YUV2GRAY_Y422);
-	 //resize(image,image,Size(60,130),0,0,INTER_NEAREST);
 
+	 cout << image.rows <<endl;
 
 	 if (prev_image.empty()){
 		 prev_image = image;

@@ -13,6 +13,9 @@
   <makefile>
     <file name="opencv_example2.c"/>
     <file name="TimeToContact.cpp"/>
+    <file name="linear_flow_fit.c" dir="modules/computer_vision/opticflow"/>
+    <file name="pprz_algebra_float.c" dir="math"/>
+    <file name="pprz_matrix_decomp_float.c" dir="math"/>
    	    <flag name="CFLAGS" value="I$(PAPARAZZI_SRC)/sw/ext/opencv_bebop/install_pc/include"/>
 	    <flag name="LDFLAGS" value="L$(PAPARAZZI_HOME)/sw/ext/opencv_bebop/install_pc/lib"/>
 		<flag name="LDFLAGS" value="lopencv_world"/>

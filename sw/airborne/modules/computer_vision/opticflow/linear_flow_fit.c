@@ -67,10 +67,13 @@ bool analyze_linear_flow_field(struct flow_t *vectors, int count, float error_th
     // return that no fit was made:
     return false;
   }
-  int test_1 = 1;
-  printf("%d", test_1);
   // fit linear flow field:
-  float parameters_u[3], parameters_v[3], min_error_u, min_error_v;
+
+  float parameters_u[3];
+  float parameters_v[3];
+  float min_error_u;
+  float min_error_v;
+
   fit_linear_flow_field(vectors, count, n_iterations, error_threshold, n_samples, parameters_u, parameters_v, &info->fit_error, &min_error_u, &min_error_v, &info->n_inliers_u, &info->n_inliers_v);
 
   // extract information from the parameters:
@@ -134,15 +137,17 @@ void fit_linear_flow_field(struct flow_t *vectors, int count, float error_thresh
   }
 
 
-  int c = 234;
-  printf('%d', c);
+
   // later used to determine the error of a set of parameters on the whole set:
   float _bb[count][1];
   MAKE_MATRIX_PTR(bb, _bb, count);
+
+  //float _D[count][3];
+  //MAKE_MATRIX_PTR(D, _D, count);
+
   float _C[count][1];
-
-
   MAKE_MATRIX_PTR(C, _C, count);
+
 
   // ***************
   // perform RANSAC:
