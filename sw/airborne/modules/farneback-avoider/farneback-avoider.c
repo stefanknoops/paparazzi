@@ -22,75 +22,215 @@
  * @author Max_Stefan
  * Adaption of orange avoider in order to use the Farneback method
  */
+#include "modules/farneback_avoider/farneback_avoider.h"
+#include "modules/computer_vision/cv.h"
+#include "modules/computer_vision/opencv_example2.hpp" //staat nu wel op een gekke plek maar prima // we moeten deze wel nog maken
+#include "firmwares/rotorcraft/navigation.h"
+#include "generated/airframe.h"
+#include "state.h"
+#include "subsystems/abi.h"
+#include <time.h>
+#include <stdio.h>
 
 #ifndef FARNEBACK_FPS
 #define FARNEBACK_FPS 0       ///< Default FPS (zero means run at camera fps)
 #endif
 PRINT_CONFIG_VAR(FARNEBACK_FPS)
 
-#include "modules/farneback_avoider/farneback_avoider.h"
-#include "modules/computer_vision/cv.h"
-#include "modules/orange_avoider/farneback.hpp" //staat nu wel op een gekke plek maar prima // we moeten deze wel nog maken
-#include "modules/computer_vision/opticflow/linear_flow_fit.h"
-#include "pthread.h"
+#define NAV_C // needed to get the nav funcitons like Inside...
+#include "generated/flight_plan.h"
 
-struct image_t *prev_img;
-float ttc;
-float ttc_temp;
+uint8_t moveWaypointForward(uint8_t waypoint, float distanceMeters);
+uint8_t moveWaypoint(uint8_t waypoint, struct EnuCoor_i *new_coor);
+uint8_t increase_nav_heading(float incrementDegrees);
+uint8_t chooseRandomIncrementAvoidance(void);
 
-static pthread_mutex_t mutex;
+enum navigation_state_t {
+  SAFE,
+  OBSTACLE_FOUND,
+  SEARCH_FOR_SAFE_HEADING,
+  OUT_OF_BOUNDS
+};
+// define and initialise global variables
+enum navigation_state_t navigation_state = SEARCH_FOR_SAFE_HEADING;
+int16_t obstacle_free_confidence = 0;   // a measure of how certain we are that the way ahead is safe.
+float heading_increment = 5.f;          // heading angle increment [deg]
+float maxDistance = 2.25;               // max waypoint displacement [m]
+float ttc = 0;
+float ttc_temp = 0;
 
-float error_threshold = 0.25;
-int n_iterations = 1;
-int n_samples = 3;
-int im_width = front_camera.output_size.w; //dit werkt wss niet
-int im_height = front_camera.output_size.h;
-struct linear_flow_fit_info *info;
-  
-bool new_ttc = false
-static float call_ttc(struct image_t *img) { //video callback function
-  struct flow_t *vectors = farneback_func(struct image_t *img,struct image_t *prev_img) 
-  //linear_flow_fit
-  if analyze_linear_flow_field(struct flow_t *vectors, int count, float error_threshold, int n_iterations, int n_samples, int im_width, int im_height, struct linear_flow_fit_info *info)
-  {
-  ttc_temp = info->time_to_contact;
-  new_ttc = true
-  }
- 
-  
-  pthread_mutex_lock(&mutex);
-  ttc  =  ttc_temp;
-  pthread_mutex_unlock(&mutex);
-  
-  *prev_img = *img;
-  return ttc_temp //niet zeker maar voor nu
-}
+const int16_t max_trajectory_confidence = 5; // number of consecutive negative object detections to be sure we are obstacle free
+
+
+
+
+#ifndef ORANGE_AVOIDER_VISUAL_DETECTION_ID
+#define ORANGE_AVOIDER_VISUAL_DETECTION_ID ABI_BROADCAST
+#endif
+static abi_event farneback_detection_ev;
+bool new_ttc = false;
+static void farneback_detection_cb(ttc_final) //HIER DE TTC AANPASSEN (opencvexample)
+		{
+		  safe_time = ttc_final;
+		}
+
 
 void farneback_init(struct image_t *img) {
+	  // Initialise random values
+	  srand(time(NULL));
+	  chooseRandomIncrementAvoidance();
   //pas airframe aan in xml
-  cv_add_to_device(&FARNEBACK_CAMERA, call_ttc, FARNEBACK_FPS);
-  *prev_img = *img;
-  AbiBindMsgVISUAL_DETECTION(ORANGE_AVOIDER_VISUAL_DETECTION_ID, &color_detection_ev, color_detection_cb); //dit gebruiken om hem in orange avoider te implementen
-
-  memset(ttc, 0, sizeof(float));
-  pthread_mutex_init(&mutex, NULL);
+  AbiBindMsgCOLLISION_DETECTION(FARNEBACK_AVOIDER_COLLISION_DETECTION, &farneback_detection_ev, farneback_detection_cb); //dit gebruiken om hem in orange avoider te implementen
 }
-
-
 
 void farneback_periodic()
 {
-   static struct color_object_t local_filters[2];
-  pthread_mutex_lock(&mutex);
-  memcpy(local_filters, global_filters, 2*sizeof(struct color_object_t));
-  pthread_mutex_unlock(&mutex);
-
-  //is deze if hier nodig? Zo ja moeten we de conditie ergens updaten
-  //de local filters moeten eruit want die gebruiken we niet
-  if(new_ttc){
-    AbiSendMsgVISUAL_DETECTION(FARNEBACK_OBJECT_DETECTION_ID, ttc);
-    new_ttc = false;
+	// only evaluate our state machine if we are flying
+	if(!autopilot_in_flight()){
+    return;
   }
+  //is deze if hier nodig? Zo ja moeten we de conditie ergens updaten
+
+  VERBOSE_PRINT("Color_count: %d  threshold: %d state: %d \n", safe_time, safe_time_threshold, navigation_state);
+
+  // update our safe confidence using color threshold
+  if(safe_time > safe_time_threshold){
+    obstacle_free_confidence++;
+  } else {
+    obstacle_free_confidence -= 2;  // be more cautious with positive obstacle detections
+  }
+
+  //HIERONDER NIETS VERANDEREN
+
+  // bound obstacle_free_confidence
+  Bound(obstacle_free_confidence, 0, max_trajectory_confidence);
+
+  float moveDistance = fminf(maxDistance, 0.2f * obstacle_free_confidence);
+
+  switch (navigation_state){
+    case SAFE:
+      // Move waypoint forward
+      moveWaypointForward(WP_TRAJECTORY, 1.5f * moveDistance);
+      if (!InsideObstacleZone(WaypointX(WP_TRAJECTORY),WaypointY(WP_TRAJECTORY))){
+        navigation_state = OUT_OF_BOUNDS;
+      } else if (obstacle_free_confidence == 0){
+        navigation_state = OBSTACLE_FOUND;
+      } else {
+        moveWaypointForward(WP_GOAL, moveDistance);
+      }
+
+      break;
+    case OBSTACLE_FOUND:
+      // stop
+      waypoint_set_here_2d(WP_GOAL);
+      waypoint_set_here_2d(WP_TRAJECTORY);
+
+      // randomly select new search direction
+      chooseRandomIncrementAvoidance();
+
+      navigation_state = SEARCH_FOR_SAFE_HEADING;
+
+      break;
+    case SEARCH_FOR_SAFE_HEADING:
+      increase_nav_heading(heading_increment);
+
+      // make sure we have a couple of good readings before declaring the way safe
+      if (obstacle_free_confidence >= 2){
+        navigation_state = SAFE;
+      }
+      break;
+    case OUT_OF_BOUNDS:
+      increase_nav_heading(heading_increment);
+      moveWaypointForward(WP_TRAJECTORY, 1.5f);
+
+      if (InsideObstacleZone(WaypointX(WP_TRAJECTORY),WaypointY(WP_TRAJECTORY))){
+        // add offset to head back into arena
+        increase_nav_heading(heading_increment);
+
+        // reset safe counter
+        obstacle_free_confidence = 0;
+
+        // ensure direction is safe before continuing
+        navigation_state = SEARCH_FOR_SAFE_HEADING;
+      }
+      break;
+    default:
+      break;
+  }
+  return;
 }
+
+/*
+ * Increases the NAV heading. Assumes heading is an INT32_ANGLE. It is bound in this function.
+ */
+uint8_t increase_nav_heading(float incrementDegrees)
+{
+  float new_heading = stateGetNedToBodyEulers_f()->psi + RadOfDeg(incrementDegrees);
+
+  // normalize heading to [-pi, pi]
+  FLOAT_ANGLE_NORMALIZE(new_heading);
+
+  // set heading
+  nav_heading = ANGLE_BFP_OF_REAL(new_heading);
+
+  VERBOSE_PRINT("Increasing heading to %f\n", DegOfRad(new_heading));
+  return false;
+}
+
+/*
+ * Calculates coordinates of a distance of 'distanceMeters' forward w.r.t. current position and heading
+ */
+static uint8_t calculateForwards(struct EnuCoor_i *new_coor, float distanceMeters)
+{
+  float heading  = stateGetNedToBodyEulers_f()->psi;
+
+  // Now determine where to place the waypoint you want to go to
+  new_coor->x = stateGetPositionEnu_i()->x + POS_BFP_OF_REAL(sinf(heading) * (distanceMeters));
+  new_coor->y = stateGetPositionEnu_i()->y + POS_BFP_OF_REAL(cosf(heading) * (distanceMeters));
+  VERBOSE_PRINT("Calculated %f m forward position. x: %f  y: %f based on pos(%f, %f) and heading(%f)\n", distanceMeters,
+                POS_FLOAT_OF_BFP(new_coor->x), POS_FLOAT_OF_BFP(new_coor->y),
+                stateGetPositionEnu_f()->x, stateGetPositionEnu_f()->y, DegOfRad(heading));
+  return false;
+}
+
+/*
+ * Sets waypoint 'waypoint' to the coordinates of 'new_coor'
+ */
+uint8_t moveWaypoint(uint8_t waypoint, struct EnuCoor_i *new_coor)
+{
+  VERBOSE_PRINT("Moving waypoint %d to x:%f y:%f\n", waypoint, POS_FLOAT_OF_BFP(new_coor->x),
+                POS_FLOAT_OF_BFP(new_coor->y));
+  waypoint_set_xy_i(waypoint, new_coor->x, new_coor->y);
+  return false;
+}
+
+/*
+ * Calculates coordinates of distance forward and sets waypoint 'waypoint' to those coordinates
+ */
+uint8_t moveWaypointForward(uint8_t waypoint, float distanceMeters)
+{
+  struct EnuCoor_i new_coor;
+  calculateForwards(&new_coor, distanceMeters);
+  moveWaypoint(waypoint, &new_coor);
+  return false;
+}
+
+/*
+ * Sets the variable 'heading_increment' randomly positive/negative
+ */
+uint8_t chooseRandomIncrementAvoidance(void)
+{
+  // Randomly choose CW or CCW avoiding direction
+  if (rand() % 2 == 0) {
+    heading_increment = 5.f;
+    VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
+  } else {
+    heading_increment = -5.f;
+    VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
+  }
+  return false;
+}
+
+
 
 
