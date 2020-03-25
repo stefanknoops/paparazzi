@@ -32,43 +32,81 @@
 #include <stdio.h>
 #include "modules/computer_vision/opticflow/linear_flow_fit.h"
 
+
 #ifndef OPENCVDEMO_FPS
 #define OPENCVDEMO_FPS 0       ///< Default FPS (zero means run at camera fps)
 #endif
 PRINT_CONFIG_VAR(OPENCVDEMO_FPS)
+
+#ifndef size_smooth
+#define size_smooth 5
+#endif
+
+float history_ttc[size_smooth];
+
+float EWMA(float *history_ttc, int size_history, float degree_of_decrease)
+{
+	//printf("%f", history_ttc[0]);
+	float num_ttc = 0.0f;
+	float den_ttc = 0.0f;
+	for (int i = 0; i<(size_history); i++){
+		num_ttc += history_ttc[i]*pow((1-degree_of_decrease),i);
+		//printf("num is: %f \n", num_ttc);
+		den_ttc += pow((1-degree_of_decrease),i);
+		//printf("den is: %f \n", den_ttc);
+	}
+	return (num_ttc/den_ttc);
+}
 
 
 // Function
 struct image_t *opencv_func(struct image_t *img);
 struct image_t *opencv_func(struct image_t *img)
 {
-  //image_yuv422_downsample(img,img,16);
-
   if (img->type == IMAGE_YUV422) {
     // Call OpenCV (C++ from paparazzi C function)
     struct flow_t *vector_ptr = opencv_example((char *) img->buf, img->w, img->h);
-
-    int count = img->w * img->h;
-    float error_threshold = 10.0;
-    int n_iterations = 100 ;
-    int n_samples = 1000;
-    int im_width = img->w; //not sure about this, check how reference frame is defined
-    int im_height = img->h;
-    struct linear_flow_fit_info info;
-    struct linear_flow_fit_info *info_ptr;
+	int count = 60 * 130;
+	float error_threshold = 10.0;
+	int n_iterations = 100 ;
+	int n_samples = 5000;
+	int im_width = 60; //not sure about this, check how reference frame is defined
+	int im_height = 130;
+	struct linear_flow_fit_info info;
+	struct linear_flow_fit_info *info_ptr;
 	info_ptr = &info;
-    bool test = analyze_linear_flow_field(vector_ptr, count, error_threshold, n_iterations, n_samples, im_width, im_height, &info);
+
+	printf("test punt 1: %d \n", vector_ptr[5000].flow_x);
+	bool test = analyze_linear_flow_field(vector_ptr, count, error_threshold, n_iterations, n_samples, im_width, im_height, &info);
+    float ttc = info.time_to_contact;
+    printf("test punt 2: %f \n", ttc);
+
+
+    if (history_ttc[0] == 0.0f){
+    	for (int i=0 ; i< (size_smooth); i++){
+    		history_ttc[i] = ttc;
+    	}
+    }
+    else{
+    	for (int i=size_smooth; i>1;i -=1){
+    		history_ttc[i-1] = history_ttc[i-2];
+    	}
+    	history_ttc[0] = ttc;
+    }
+    float smooth_ttc = EWMA(&history_ttc,size_smooth,0.5);
+
   }
+    // opencv_example(NULL, 10,10);
+    //memset(history_ttc, 1, 5*sizeof(history_ttc[0]));
 
 
 
-// opencv_example(NULL, 10,10);
 
   return NULL;
 }
 
 void opencvdemo_init(void)
 {
-  cv_add_to_device(&OPENCVDEMO_CAMERA, opencv_func, 4);
+  cv_add_to_device(&OPENCVDEMO_CAMERA, opencv_func, 15);
 }
 

@@ -70,9 +70,11 @@ bool analyze_linear_flow_field(struct flow_t *vectors, int count, float error_th
   // fit linear flow field:
 
   float parameters_u[3];
+
   float parameters_v[3];
   float min_error_u;
   float min_error_v;
+
 
   fit_linear_flow_field(vectors, count, n_iterations, error_threshold, n_samples, parameters_u, parameters_v, &info->fit_error, &min_error_u, &min_error_v, &info->n_inliers_u, &info->n_inliers_v);
 
@@ -141,6 +143,7 @@ void fit_linear_flow_field(struct flow_t *vectors, int count, float error_thresh
   // later used to determine the error of a set of parameters on the whole set:
   float _bb[count][1];
   MAKE_MATRIX_PTR(bb, _bb, count);
+
 
   //float _D[count][3];
   //MAKE_MATRIX_PTR(D, _D, count);
