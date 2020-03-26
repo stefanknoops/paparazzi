@@ -55,3 +55,10 @@ struct image_t *farneback_func(struct image_t *img)
 
 
 // hier actie ondernemen?
+
+
+
+
+
+
+

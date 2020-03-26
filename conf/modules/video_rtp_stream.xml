@@ -15,7 +15,7 @@
 
     <define name="VIEWVIDEO_CAMERA" value="front_camera|bottom_camera" description="Video device to use"/>
     <define name="VIEWVIDEO_CAMERA2" value="front_camera|bottom_camera" description="Video device to use"/>
-    <define name="VIEWVIDEO_DOWNSIZE_FACTOR" value="4" description="Reduction factor of the video stream, the image width and height should be divisible by this factor"/>
+    <define name="VIEWVIDEO_DOWNSIZE_FACTOR" value="20" description="Reduction factor of the video stream, the image width and height should be divisible by this factor"/>
     <define name="VIEWVIDEO_QUALITY_FACTOR" value="50" description="JPEG encoding compression factor [0-99]"/>
     <define name="VIEWVIDEO_FPS" value="5" description="Image frequency for the RTP viewer (recommended >=5Hz)"/>
     <define name="VIEWVIDEO_USE_RTP" value="TRUE|FALSE" description="Enable RTP at startup for transferring images (default: TRUE)"/>

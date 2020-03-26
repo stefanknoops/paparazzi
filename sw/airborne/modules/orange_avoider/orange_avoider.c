@@ -25,6 +25,7 @@
 #include <time.h>
 #include <stdio.h>
 
+
 #define NAV_C // needed to get the nav funcitons like Inside...
 #include "generated/flight_plan.h"
 

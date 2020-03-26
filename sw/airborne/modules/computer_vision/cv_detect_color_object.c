@@ -30,6 +30,13 @@
 #include "modules/computer_vision/cv.h"
 #include "subsystems/abi.h"
 #include "std.h"
+#include <opencv/cv.h>
+#include <opencv2/core/core_c.h>
+#include <opencv2/imgproc/imgproc_c.h>
+#include <opencv2/video/tracking_c.h>
+#include <opencv2/core/types_c.h>
+#include <opencv2/imgproc/imgproc_c.h>
+#include <modules/computer_vision/opencv_example.h>
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -98,6 +105,7 @@ static struct image_t *object_detector(struct image_t *img, uint8_t filter)
   uint8_t cr_min, cr_max;
   bool draw;
 
+
   switch (filter){
     case 1:
       lum_min = cod_lum_min1;
@@ -120,6 +128,7 @@ static struct image_t *object_detector(struct image_t *img, uint8_t filter)
     default:
       return img;
   };
+
 
   int32_t x_c, y_c;
 
@@ -168,7 +177,7 @@ void color_object_detector_init(void)
   cod_draw1 = COLOR_OBJECT_DETECTOR_DRAW1;
 #endif
 
-  cv_add_to_device(&COLOR_OBJECT_DETECTOR_CAMERA1, object_detector1, COLOR_OBJECT_DETECTOR_FPS1);
+  cv_add_to_device(&COLOR_OBJECT_DETECTOR_CAMERA1, object_detector1, 1);
 #endif
 
 #ifdef COLOR_OBJECT_DETECTOR_CAMERA2

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) C. De Wagter
+ * Copyright (C) Daan
  *
  * This file is part of paparazzi
  *
@@ -18,23 +18,15 @@
  * <http://www.gnu.org/licenses/>.
  */
 /**
- * @file "modules/computer_vision/cv_opencvdemo.h"
- * @author C. De Wagter
- * A simple module showing what you can do with opencv on the bebop.
+ * @file "modules/computer_vision/opencv_example.h"
+ * @author Daan
+ * Example of how opencv can be used he bebop drone
  */
 
 #ifndef OPENCV_EXAMPLE_H
 #define OPENCV_EXAMPLE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-int opencv_example(char *img, int width, int height);
-
-#ifdef __cplusplus
-}
-#endif
+extern void opencvdemo_init();
 
 #endif
 

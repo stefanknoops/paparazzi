@@ -107,8 +107,8 @@ void fit_linear_flow_field(struct flow_t *vectors, int count, float error_thresh
   // where A = [nx3] matrix with entries [x, y, 1] for each optic flow location
   // and b = [nx1] vector with either the horizontal (bu) or vertical (bv) flow.
   // x in the system are the parameters for the horizontal (pu) or vertical (pv) flow field.
-
   // local vars for iterating, random numbers:
+
   int sam, p, i_rand, si, add_si;
 
   // ensure that n_samples is high enough to ensure a result for a single fit:
@@ -135,12 +135,17 @@ void fit_linear_flow_field(struct flow_t *vectors, int count, float error_thresh
   // later used to determine the error of a set of parameters on the whole set:
   float _bb[count][1];
   MAKE_MATRIX_PTR(bb, _bb, count);
-  float _C[count][1];
-  MAKE_MATRIX_PTR(C, _C, count);
+
+
+
+
+  // mistake is in above code
 
   // ***************
   // perform RANSAC:
   // ***************
+
+
 
   // set up variables for small linear system solved repeatedly inside RANSAC:
   float _A[n_samples][3];
@@ -156,6 +161,16 @@ void fit_linear_flow_field(struct flow_t *vectors, int count, float error_thresh
   float _pv[3][1];
   MAKE_MATRIX_PTR(pv, _pv, 3);
 
+
+  float _D[count][3];
+  MAKE_MATRIX_PTR(D, _D, count);
+
+
+  float _C[count][1];
+  MAKE_MATRIX_PTR(C, _C, count);
+
+
+
   // iterate and store parameters, errors, inliers per fit:
   float PU[n_iterations * 3];
   float PV[n_iterations * 3];
@@ -166,6 +181,8 @@ void fit_linear_flow_field(struct flow_t *vectors, int count, float error_thresh
   int n_inliers_pu[n_iterations];
   int n_inliers_pv[n_iterations];
   int it, ii;
+
+
   for (it = 0; it < n_iterations; it++) {
     // select a random sample of n_sample points:
     int sample_indices[n_samples];
@@ -183,6 +200,8 @@ void fit_linear_flow_field(struct flow_t *vectors, int count, float error_thresh
         i_rand ++;
       }
     }
+
+
 
     // Setup the system:
     for (sam = 0; sam < n_samples; sam++) {
@@ -211,18 +230,21 @@ void fit_linear_flow_field(struct flow_t *vectors, int count, float error_thresh
     PV[it * 3 + 1] = pv[1][0];
     PV[it * 3 + 2] = pv[2][0];
 
+
+
     // count inliers and determine their error on all points:
     errors_pu[it] = 0;
     errors_pv[it] = 0;
     n_inliers_pu[it] = 0;
     n_inliers_pv[it] = 0;
 
+
+
     // for horizontal flow:
     // bb = AA * pu:
     MAT_MUL(count, 3, 1, bb, AA, pu);
     // subtract bu_all: C = 0 in case of perfect fit:
     MAT_SUB(count, 1, C, bb, bu_all);
-
     for (p = 0; p < count; p++) {
       C[p][0] = abs(C[p][0]);
       if (C[p][0] < error_threshold) {
@@ -249,6 +271,8 @@ void fit_linear_flow_field(struct flow_t *vectors, int count, float error_thresh
       }
     }
   }
+
+
 
   // After all iterations:
   // select the parameters with lowest error:
@@ -321,6 +345,8 @@ void extract_information_from_parameters(float *parameters_u, float *parameters_
   // relative velocities:
   info->relative_velocity_z = (parameters_u[0] + parameters_v[1]) / 2.0f; // divergence / 2
 
+  //printf("pu[0] %f \t  %f \t %f pv[1] \t %f \t %f \t %f:  \n", parameters_u[0], parameters_u[1], parameters_u[2], parameters_v[0],parameters_v[1],parameters_v[2]);
+  //printf("pu[2]: \t %f \n", parameters_u[2]);
   // translation orthogonal to the camera axis:
   // flow in the center of the image:
   info->relative_velocity_x = -(parameters_u[2] + (im_width / 2.0f) * parameters_u[0] + (im_height / 2.0f) * parameters_u[1]);
