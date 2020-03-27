@@ -3,7 +3,7 @@
 <module name="farneback_avoider" dir="farneback_avoider">
   <doc>
     <description>Assignment 2019 by Group 5</description>
- <define name="FARNEBACK_AVOIDER_COLLISION_DETECTION" value="ABI_BROADCAST" description="which VISUAL_DETECTION message to recieve for orange pole detection."/>
+ <define name="FARNEBACK_AVOIDER_RECEIVER" value="ABI_BROADCAST" description="which VISUAL_DETECTION message to recieve for orange pole detection."/>
  
   </doc>
   <header>

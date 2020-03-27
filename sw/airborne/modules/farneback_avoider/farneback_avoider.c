@@ -76,12 +76,12 @@ const int16_t max_trajectory_confidence = 5; // number of consecutive negative o
 #define VERBOSE_PRINT(...)
 #endif
 
-#ifndef FARNEBACK_AVOIDER_COLLISION_DETECTION
-#define FARNEBACK_AVOIDER_COLLISION_DETECTION ABI_BROADCAST
+#ifndef FARNEBACK_AVOIDER_RECEIVER
+#define FARNEBACK_AVOIDER_RECEIVER ABI_BROADCAST
 #endif
 
 static abi_event farneback_detection_ev;
-static void farneback_detection_cb(ttc) //HIER DE TTC AANPASSEN (opencvexample)
+static void farneback_detection_cb(int __attribute__((unused)) senderid, float ttc) //HIER DE TTC AANPASSEN (opencvexample)
 		{
 		  safe_time = ttc;
 		  printf("safe_time NA OVERSCHRIJVEN SAFE TIME= %f \n",safe_time);
@@ -95,7 +95,7 @@ void farneback_init(void) {
 	  srand(time(NULL));
 	  chooseRandomIncrementAvoidance();
 	  printf("farneback init gelukt \n");
-		 AbiBindMsgFARNEBACK_DETECTION(FARNEBACK_AVOIDER_COLLISION_DETECTION, &farneback_detection_ev, farneback_detection_cb);
+		 AbiBindMsgFARNEBACK_DETECTION(FARNEBACK_AVOIDER_RECEIVER, &farneback_detection_ev, farneback_detection_cb);
 		 printf("ttc NA BIND MSG \n");
 
 
