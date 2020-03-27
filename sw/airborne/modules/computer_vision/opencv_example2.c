@@ -66,21 +66,20 @@ struct image_t *opencv_func(struct image_t *img)
   if (img->type == IMAGE_YUV422) {
     // Call OpenCV (C++ from paparazzi C function)
     struct flow_t *vector_ptr = opencv_example((char *) img->buf, img->w, img->h);
-	int count = 60 * 130;
+	int count = 60*60 / 9.0f ;
 	float error_threshold = 10.0;
 	int n_iterations = 100 ;
-	int n_samples = 5000;
+	int n_samples = 50;
 	int im_width = 60; //not sure about this, check how reference frame is defined
-	int im_height = 130;
+	int im_height = 60;
 	struct linear_flow_fit_info info;
 	struct linear_flow_fit_info *info_ptr;
 	info_ptr = &info;
 
-	printf("test punt 1: %d \n", vector_ptr[5000].flow_x);
 	bool test = analyze_linear_flow_field(vector_ptr, count, error_threshold, n_iterations, n_samples, im_width, im_height, &info);
     float ttc = info.time_to_contact;
-    printf("test punt 2: %f \n", ttc);
 
+    ttc = abs(ttc);
 
     if (history_ttc[0] == 0.0f){
     	for (int i=0 ; i< (size_smooth); i++){
@@ -94,6 +93,7 @@ struct image_t *opencv_func(struct image_t *img)
     	history_ttc[0] = ttc;
     }
     float smooth_ttc = EWMA(&history_ttc,size_smooth,0.5);
+    printf("%f \n", ttc * 1.0f/30.0f);
 
   }
     // opencv_example(NULL, 10,10);
@@ -107,6 +107,6 @@ struct image_t *opencv_func(struct image_t *img)
 
 void opencvdemo_init(void)
 {
-  cv_add_to_device(&OPENCVDEMO_CAMERA, opencv_func, 15);
+  cv_add_to_device(&OPENCVDEMO_CAMERA, opencv_func, 30);
 }
 

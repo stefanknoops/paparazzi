@@ -10,65 +10,94 @@ using namespace std;
 #include <stdio.h>
 #include <iostream>
 #include "modules/computer_vision/opticflow/linear_flow_fit.h"
+#include <opencv2/core/utility.hpp>
+#include <algorithm>
 
 using namespace cv;
+using namespace std;
 Mat prev_image;
+String path("/home/daan/Documents/AE4317_2019_datasets/Pictures/*.jpg"); //select only jpg
+vector<String> fn;
+int ind = 0;
 
 
 struct flow_t* opencv_example(char *img, int width, int height)
 {
-	 // Create a new image, using the original bebop image.
-	 Mat M(height, width, CV_8UC2, img);
-	 Mat image;
-	 //Mat image1 = imread("/home/daan/github/sw/airborne/modules/computer_vision/frame1.jpg", 0);
-	 //Mat image2 = imread("/home/daan/github/sw/airborne/modules/computer_vision/frame2.jpg", 0);
-
-
-	 //  Grayscale image example
-	 resize(M,M,Size(60,130),0,0,INTER_NEAREST);
-	 cvtColor(M, image, CV_YUV2GRAY_Y422);
-
-	 cout << image.rows <<endl;
-
-	 if (prev_image.empty()){
-		 prev_image = image;
+	// import large test data set
+	 vector<Mat> data;
+	 glob(path,fn, true); // recurse
+	 sort(fn.begin(), fn.end());
+	 for (size_t k=0; k<fn.size(); ++k)
+	 {
+	     Mat im = imread(fn[k],CV_LOAD_IMAGE_GRAYSCALE);
+	     //cout << outt << endl;
+	     //Mat cropped_image = im;
+	     Mat cropped_image = im(Rect(0,125,240,240));
+	     if (im.empty()) continue; //only proceed if sucsessful
+	     data.push_back(cropped_image);
 	 	 }
+
+
+	 for (size_t k =0; k < data.size(); k ++){
+		 resize(data[k],data[k],Size(),0.25,0.25,INTER_AREA);
+	 }
+	 // Create a new image, using the original bebop image, use this when camera is taken as input
+	 // Mat M(height, width, CV_8UC2, img);
+	 // Mat image;
+	 // cvtColor(M, image, CV_YUV2GRAY_Y422);
+	 // if (prev_image.empty()){
+	//	 prev_image = image;
+	 //	 }
 
 	 Mat flow, cflow, frame;
 	 Mat gray, prevgray, uflow;
 
-	 calcOpticalFlowFarneback(prev_image, image, uflow, 0.5, 3, 15, 3, 5, 1.2, 0);
-	 //calcOpticalFlowFarneback(image1, image2, uflow, 0.5, 3, 15, 3, 5, 1.2, 0);
-	 prev_image = image;
+	 // import small test data set
+	 Mat image1_temp = data[ind];//imread("/home/daan/Documents/AE4317_2019_datasets/Pictures/31537000.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+	 Mat image2_temp = data[ind +1];//imread("/home/daan/Documents/AE4317_2019_datasets/Pictures/31639000.jpg", CV_LOAD_IMAGE_GRAYSCALE);
 
-	 float c1 = uflow.at<Vec2f>(50,50)[0];
-	 printf(" %f \n", c1);
+     //resize(image1_temp, image1_temp, Size(),0.25,0.25,INTER_AREA);
+     //resize(image2_temp, image2_temp, Size(),0.25,0.25,INTER_AREA);
+
+	 //Mat image1_temp_cropped = image1_temp(Rect(0,125,240,240));
+	 //Mat image2_temp_cropped = image2_temp(Rect(0,125,240,240));
+
+	 // apply farneback to find dense optical flow
+	 //calcOpticalFlowFarneback(prev_image, image, uflow, 0.5, 3, 15, 3, 5, 1.2, 0);
+	 calcOpticalFlowFarneback(image1_temp, image2_temp, uflow, 0.5, 3, 15, 10, 7, 1.2, 0);
+	 //prev_image = image;
+
 	 // fill struct with flow vectors
 	 struct flow_t vectors[uflow.cols * uflow.rows];
 	 struct flow_t *vectors_ptr;
 	 vectors_ptr = vectors;
 
-	 //optimise this if necessary
-	 for (int i=0 ; i< (uflow.rows); i++){
-		 for(int j = 0; j < (uflow.cols) ;j++){
-		 vectors_ptr[j + i * uflow.cols].pos.x = j;
-		 vectors_ptr[j + i * uflow.cols].pos.y = i;
-		 vectors_ptr[j + i * uflow.cols].flow_x = uflow.at<Vec2f>(i,j)[0];
-		 vectors_ptr[j + i * uflow.cols].flow_y = uflow.at<Vec2f>(i,j)[1];
+	 //printf("rows modulo 3 \t %d", uflow.rows%3);
+
+	 int k = 0;
+	 int z = 0;
+	 int vector_count = 0;
+	 int subpixel_factor = 1;
+	 for (int i=0 ; i< (uflow.rows); i = i + 3){
+		 for(int j = 0; j < (uflow.cols) ;j = j +3){
+		 vectors_ptr[k + z * uflow.cols].pos.x = (uint32_t)(j * subpixel_factor);
+		 vectors_ptr[k + z * uflow.cols].pos.y = (uint32_t)(i * subpixel_factor);
+		 vectors_ptr[k + z * uflow.cols].flow_x = (float)(uflow.at<Vec2f>(i,j)[0]* subpixel_factor * -1);
+		 vectors_ptr[k + z * uflow.cols].flow_y = (float)(uflow.at<Vec2f>(i,j)[1] * subpixel_factor * -1);
+	 	 k = k + 1;
+	 	 vector_count++;
 		 }
+		 z = z + 1;
+		k = 0;
 	 }
-	 /*
-	 //printf("flow in x: %d \n", vectors_ptr[23860].flow_x);
-	 //struct flow_t *vectors_ptr = &vectors;
-	 //struct flow_t *vectors_ptr;
-	 int count = int(uflow.cols * uflow.rows);
-	 float error_threshold = 10.0;
-	 int n_iterations = 100 ;
-	 int n_samples = 25;
-	 int im_width = uflow.cols; //not sure about this, check how reference frame is defined
-	 int im_height = uflow.rows;
-	 struct linear_flow_fit_info *info;
-	 analyze_linear_flow_field(vectors_ptr, count, error_threshold, n_iterations, n_samples, im_width, im_height, info);
-	*/
+
+	 //printf("total number of vectors: %d", vector_count);
+		// for(int j = 0; j < (uflow.cols) ;j++){
+			// int i =225;
+		 //printf("\t %f \n", vectors_ptr[j + i * uflow.cols].flow_x);
+		 //}
+
+
+	 ind++;
 	return vectors_ptr;
 }
