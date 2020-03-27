@@ -41,7 +41,7 @@
 static pthread_mutex_t mutex;
 
 #ifndef TTC_FPS
-#define TTC_FPS 0 ///< Default FPS (zero means run at camera fps)
+#define TTC_FPS 15 ///< Default FPS (zero means run at camera fps)
 #endif
 
 //settings (hier de constanten definen)
@@ -51,21 +51,21 @@ int n_samples = 50;
 
 struct image_t *img;
 
-float *ttc = 0;
-float *ttc_glob2 = 0;
+float ttc;
+float ttc_glob2;
 
 struct image_t *calc_ttc(struct image_t *img);
 struct image_t *calc_ttc(struct image_t *img)
 {
-	printf("Hier print hij nog 22\n");
-	printf("%d",img->h);
+	//printf("Hier print hij nog 22\n");
+	//printf("%d",img->h);
   //image_yuv422_downsample(img,img,16);
   if (img->type == IMAGE_YUV422) {
    	// Call OpenCV (C++ from paparazzi C function)
-		printf("Hier print hij nog 3\n");
+		//printf("Hier print hij nog 3\n");
 
     	struct flow_t *vector_ptr = farneback_flow((char *) img->buf, img->w, img->h); //deze functie moet vervangen worden door de uiteindelijk
-    	printf("Hier print hij nog 4\n");
+    	//printf("Hier print hij nog 4\n");
 
     	int count = 60 * 60 / 9.0f;
     	int im_width = 60; //not sure about this, check how reference frame is defined
@@ -73,15 +73,19 @@ struct image_t *calc_ttc(struct image_t *img)
     	struct linear_flow_fit_info info;
     	struct linear_flow_fit_info *info_ptr;
     	info_ptr = &info;
-    	printf("this works still \n");
+    	//printf("this works still \n");
     	bool test = analyze_linear_flow_field(vector_ptr, count, error_threshold, n_iterations, n_samples, im_width, im_height, &info);
-    	printf("it works");
-    	*ttc = info.time_to_contact;
-    	printf("hier print hij nog XIII");
-  }
-	printf("Hier print hij weer 5\n");
+    	//printf("it works");
+    	printf("ttc voor pthread = %f \n", info.time_to_contact*(1.0f/15.0f));
 
-  return NULL;
+    	//printf("hier print hij nog XII\n");
+    	pthread_mutex_lock(&mutex);
+    	  ttc_glob2 = info.time_to_contact*(1.0f/15.0f);
+    	pthread_mutex_unlock(&mutex);
+  }
+	//printf("Hier print hij weer 5\n");
+
+  return img;
 }
 
 void ttc_init(void)
@@ -101,10 +105,11 @@ void ttc_init(void)
 
 void ttc_periodic(void){
 float ttc_final;
+//printf("print ie dit nog");
   pthread_mutex_lock(&mutex);
-  memcpy(ttc_glob2, ttc, sizeof(float));
+  memcpy(&ttc, &ttc_glob2, sizeof(float));
   pthread_mutex_unlock(&mutex);
-  printf("ttc periodic \n");
+printf("ttc na pthread= %f \n", ttc);
 
 }
 

@@ -93,9 +93,9 @@ void farneback_periodic(struct image_t *img)
 	  printf("farneback periodic begin \n");
 
 	// only evaluate our state machine if we are flying
-	//if(!autopilot_in_flight()){
-    //return;
- // };
+	if(!autopilot_in_flight()){
+    return;
+  };
 
 	//safe_time = ttc_calculator_func();
 

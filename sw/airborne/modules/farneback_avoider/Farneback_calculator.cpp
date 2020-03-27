@@ -17,37 +17,30 @@ Mat prev_image;
 
 struct flow_t* farneback_flow(char *img, int width, int height)
 {	
-	printf("Hier print hij nog I\n");
 
 	 // Create a new image, using the original bebop image, use this when camera is taken as input
 	  Mat M(height, width, CV_8UC2, img);
 	  Mat image;
 	  //resize(M,M,Size(60,130),0,0,INTER_NEAREST);
 	  cvtColor(M, image, CV_YUV2GRAY_Y422);
-		printf("Hier print hij nog II\n");
 
 	  Mat crop_image = image(Rect(0,125,240,240));
 
 	  Mat flow, cflow, frame;
 	  Mat gray, prevgray, uflow;
-		printf("Hier print hij nog III\n");
 
 	  resize(crop_image, crop_image, Size(),0.25,0.25,INTER_AREA);
-		printf("Hier print hij nog IV\n");
 
 	  if (prev_image.empty()){
 	  		 prev_image = crop_image;
 	  	 	 }
-		printf("Hier print hij nog V\n");
 
 		//printf("image test: %d \n", crop_image.cols);
 		//printf("image test: %d \n", crop_image.rows);
 	 // apply farneback to find dense optical flow
 	 calcOpticalFlowFarneback(prev_image, crop_image, uflow, 0.5, 3, 15, 10, 7, 1.2, 0);
-		printf("Hier print hij nog VI\n");
 
 	 prev_image = crop_image;
-		printf("Hier print hij nog VII\n");
 
 	 // fill struct with flow vectors
 	 struct flow_t vectors[uflow.cols * uflow.rows];
