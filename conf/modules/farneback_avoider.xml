@@ -13,6 +13,7 @@
  <makefile target="nps">
        <file name="farneback_avoider.c"/>
        <file name="TTC_calculator.c"/>
+       <file name="Farneback_calculator.cpp"/>
        <flag name="CFLAGS" value="I$(PAPARAZZI_SRC)/sw/ext/opencv_bebop/install_pc/include"/>
 		    <flag name="LDFLAGS" value="L$(PAPARAZZI_HOME)/sw/ext/opencv_bebop/install_pc/lib"/>
 			<flag name="LDFLAGS" value="lopencv_world"/>

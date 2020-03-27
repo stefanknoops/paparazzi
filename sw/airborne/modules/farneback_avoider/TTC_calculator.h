@@ -22,8 +22,10 @@
  * @author Stefan en de rest
  * Assignment 2019
  */
+#ifndef TTC_CALCULATOR_H_
+#define TTC_CALCULATOR_H_
 
+extern void ttc_calc_init(void) ;
+extern void ttc_calc_periodic(void);
 
-float ttc_calculator_func(void);
-void ttc_calc_init(void) ;
-void ttc_calc_periodic(void);
+#endif

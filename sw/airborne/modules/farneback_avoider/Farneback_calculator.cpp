@@ -1,4 +1,4 @@
-#include "TimeToContact.h"
+#include "modules/farneback_avoider/Farneback_calculator.h"
 
 
 using namespace std;
@@ -10,12 +10,10 @@ using namespace std;
 #include <stdio.h>
 #include <iostream>
 #include "modules/computer_vision/opticflow/linear_flow_fit.h"
-#include <opencv2/core/utility.hpp>
-#include <algorithm>
 
 using namespace cv;
-using namespace std;
 Mat prev_image;
+
 
 struct flow_t* farneback_flow(char *img, int width, int height)
 {	

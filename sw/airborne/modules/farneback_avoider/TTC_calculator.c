@@ -1,4 +1,5 @@
 // Own header
+#include "TTC_calculator.h"
 
 #include "modules/computer_vision/cv.h"
 #include "subsystems/abi.h"
@@ -11,6 +12,8 @@
 #include <opencv2/imgproc/imgproc_c.h>
 #include "Farneback_calculator.h"
 #include "modules/computer_vision/lib/vision/image.h"
+#include "modules/computer_vision/opticflow/linear_flow_fit.h"
+#include "modules/farneback_avoider/Farneback_calculator.cpp"
 
 
 #include <stdio.h>
@@ -46,6 +49,7 @@ float *ttc = 0;
 float *ttc_glob = 0;
 
 //hier de main functie
+float ttc_calculator_func(void);
 float ttc_calculator_func(void)
 {
   //image_yuv422_downsample(img,img,16);
@@ -59,7 +63,7 @@ float ttc_calculator_func(void)
     	struct linear_flow_fit_info *info_ptr;
     	info_ptr = &info;
     	bool test = analyze_linear_flow_field(vector_ptr, count, error_threshold, n_iterations, n_samples, im_width, im_height, &info);
-    	*ttc = info->time_to_contact;
+    	*ttc = info.time_to_contact;
   }
   //return ttc;
 }
@@ -67,7 +71,7 @@ float ttc_calculator_func(void)
 //hier de init (voor de mutexen)
 void ttc_calc_init(void)  
 {
-	memset(*ttc_glob, 0, sizeof(float));
+	memset(ttc_glob, 0, sizeof(float));
   	pthread_mutex_init(&mutex, NULL);
   	cv_add_to_device(&FARNEBACK_CAMERA, img, TTC_FPS); //tweede argument is volgens mij gewoon de afbeelding
 
@@ -75,10 +79,9 @@ void ttc_calc_init(void)
 }
 void ttc_calc_periodic(void)
 {
-
   //float ttc_final;
   pthread_mutex_lock(&mutex);
-  memcpy(*ttc_glob, *ttc, sizeof(float));
+  memcpy(ttc_glob, ttc, sizeof(float));
   pthread_mutex_unlock(&mutex);
 
 }

@@ -27,8 +27,8 @@
 #ifndef FARNEBACK_AVOIDER_H
 #define FARNEBACK_AVOIDER_H
 
-void farneback_init(void);
-void farneback_periodic();
+extern void farneback_init(void);
+extern void farneback_periodic();
 
 #endif
 
