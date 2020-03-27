@@ -86,14 +86,17 @@ void farneback_init(void) {
 	  chooseRandomIncrementAvoidance();
 }
 
-void farneback_periodic()
+void farneback_periodic(struct image_t *img)
 {
+	 printf("Hier print hij nog 1\n");
+
 	// only evaluate our state machine if we are flying
-	if(!autopilot_in_flight()){
-    return;
-  };
-  //is deze if hier nodig? Zo ja moeten we de conditie ergens updaten
-safe_time = ttc_calculator_func();
+	//if(!autopilot_in_flight()){
+    //return;
+ // };
+
+	safe_time = ttc_calculator_func(struct image_t *img);
+
   VERBOSE_PRINT("Color_count: %f  threshold: %f state: %d \n", safe_time, safe_time_threshold, navigation_state);
 
   // update our safe confidence using color threshold

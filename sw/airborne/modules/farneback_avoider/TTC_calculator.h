@@ -27,5 +27,9 @@
 
 extern void ttc_calc_init(void) ;
 extern void ttc_calc_periodic(void);
+extern float ttc_calculator_func();
+struct image_t *image_func(struct image_t *img);
+
+
 
 #endif

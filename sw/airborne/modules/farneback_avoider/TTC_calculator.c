@@ -49,15 +49,17 @@ float *ttc = 0;
 float *ttc_glob = 0;
 
 //hier de main functie
-float ttc_calculator_func(void);
-float ttc_calculator_func(void)
+float ttc_calculator_func()
 {
-	printf("this works still \n");
+	printf("Hier print hij nog 22\n");
   //image_yuv422_downsample(img,img,16);
   if (img->type == IMAGE_YUV422) {
    	// Call OpenCV (C++ from paparazzi C function)
+		printf("Hier print hij nog 3\n");
 
     	struct flow_t *vector_ptr = farneback_flow((char *) img->buf, img->w, img->h); //deze functie moet vervangen worden door de uiteindelijk
+    	printf("Hier print hij nog 4\n");
+
     	int count = 60 * 130;
     	int im_width = 60; //not sure about this, check how reference frame is defined
     	int im_height = 130;
@@ -69,15 +71,19 @@ float ttc_calculator_func(void)
     	printf("it works");
     	*ttc = info.time_to_contact;
   }
-  //return ttc;
+	printf("Hier print hij weer 5\n");
+
+  return *ttc;
 }
 
 //hier de init (voor de mutexen)
+
+
 void ttc_calc_init(void)  
 {
 	memset(ttc_glob, 0, sizeof(float));
   	pthread_mutex_init(&mutex, NULL);
-  	cv_add_to_device(&FARNEBACK_CAMERA, img, TTC_FPS); //tweede argument is volgens mij gewoon de afbeelding
+  	cv_add_to_device(&FARNEBACK_CAMERA, ttc_calculator_func, TTC_FPS); //tweede argument is volgens mij gewoon de afbeelding
 
 
 }

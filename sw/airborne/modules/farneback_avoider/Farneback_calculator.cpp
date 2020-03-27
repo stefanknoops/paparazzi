@@ -17,6 +17,7 @@ Mat prev_image;
 
 struct flow_t* farneback_flow(char *img, int width, int height)
 {	
+	printf("Hier print hij nog I\n");
 
 	 // Create a new image, using the original bebop image, use this when camera is taken as input
 	  Mat M(height, width, CV_8UC2, img);
@@ -28,7 +29,6 @@ struct flow_t* farneback_flow(char *img, int width, int height)
 
 	 Mat flow, cflow, frame;
 	 Mat gray, prevgray, uflow;
-
 
 	 // apply farneback to find dense optical flow
 	 calcOpticalFlowFarneback(prev_image, image, uflow, 0.5, 3, 15, 10, 7, 1.2, 0);
