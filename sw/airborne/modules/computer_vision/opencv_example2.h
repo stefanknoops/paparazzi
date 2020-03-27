@@ -26,6 +26,8 @@
 #ifndef OPENCV_EXAMPLE_H
 #define OPENCV_EXAMPLE_H
 
+extern int n_iterations;
+
 extern float EWMA(float *history_ttc, int size_history, float degree_of_decrease);
 
 extern void opencvdemo_init();

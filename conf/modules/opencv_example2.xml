@@ -5,7 +5,19 @@
     <description>Example of how opencv can be used he bebop drone</description>
   	<define name="OPENCVDEMO_CAMERA" value="front_camera|bottom_camera" description="Video device to use"/>
   	<define name="OPENCVDEMO_FPS" value="0" description="The (maximum) frequency to run the calculations at. If zero, it will max out at the camera frame rate"/>
+	<define name="FARBNEBACK_N_ITERATIONS" value="1" description="The number of RANSAC iterations the algorithm does"/>
   </doc>
+
+
+<settings>
+    <dl_settings>
+      <dl_settings name="ColorObjectDetector">
+         <dl_setting var="n_iterations" min="1" step="1" max="255" shortname="n_itts"/>
+      </dl_settings>
+    </dl_settings>
+</settings>
+
+
   <header>
     <file name="opencv_example2.h"/>
   </header>

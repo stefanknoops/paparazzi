@@ -42,6 +42,8 @@ PRINT_CONFIG_VAR(OPENCVDEMO_FPS)
 #define size_smooth 5
 #endif
 
+int n_iterations;
+
 float history_ttc[size_smooth];
 
 float EWMA(float *history_ttc, int size_history, float degree_of_decrease)
@@ -68,7 +70,6 @@ struct image_t *opencv_func(struct image_t *img)
     struct flow_t *vector_ptr = opencv_example((char *) img->buf, img->w, img->h);
 	int count = 60 * 130;
 	float error_threshold = 10.0;
-	int n_iterations = 100 ;
 	int n_samples = 5000;
 	int im_width = 60; //not sure about this, check how reference frame is defined
 	int im_height = 130;
@@ -81,6 +82,7 @@ struct image_t *opencv_func(struct image_t *img)
     float ttc = info.time_to_contact;
     printf("test punt 2: %f \n", ttc);
 
+    printf("the number of iterations %d \n", n_iterations);
 
     if (history_ttc[0] == 0.0f){
     	for (int i=0 ; i< (size_smooth); i++){
@@ -108,5 +110,6 @@ struct image_t *opencv_func(struct image_t *img)
 void opencvdemo_init(void)
 {
   cv_add_to_device(&OPENCVDEMO_CAMERA, opencv_func, 15);
+  n_iterations = FARNEBACK_N_ITERATIONS;
 }
 
