@@ -42,7 +42,9 @@ PRINT_CONFIG_VAR(OPENCVDEMO_FPS)
 #define size_smooth 5
 #endif
 
-int n_iterations;
+int n_iterations = 10;
+float error_threshold = 10.0;
+int n_samples = 5000;
 
 float history_ttc[size_smooth];
 
@@ -69,8 +71,6 @@ struct image_t *opencv_func(struct image_t *img)
     // Call OpenCV (C++ from paparazzi C function)
     struct flow_t *vector_ptr = opencv_example((char *) img->buf, img->w, img->h);
 	int count = 60 * 130;
-	float error_threshold = 10.0;
-	int n_samples = 5000;
 	int im_width = 60; //not sure about this, check how reference frame is defined
 	int im_height = 130;
 	struct linear_flow_fit_info info;
@@ -110,6 +110,5 @@ struct image_t *opencv_func(struct image_t *img)
 void opencvdemo_init(void)
 {
   cv_add_to_device(&OPENCVDEMO_CAMERA, opencv_func, 15);
-  n_iterations = FARNEBACK_N_ITERATIONS;
 }
 
