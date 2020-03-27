@@ -67,13 +67,14 @@ bool analyze_linear_flow_field(struct flow_t *vectors, int count, float error_th
     // return that no fit was made:
     return false;
   }
-  int test_1 = 1;
-  printf("%d", test_1);
+
   // fit linear flow field:
   float parameters_u[3], parameters_v[3], min_error_u, min_error_v;
+
   fit_linear_flow_field(vectors, count, n_iterations, error_threshold, n_samples, parameters_u, parameters_v, &info->fit_error, &min_error_u, &min_error_v, &info->n_inliers_u, &info->n_inliers_v);
 
   // extract information from the parameters:
+
   extract_information_from_parameters(parameters_u, parameters_v, im_width, im_height, info);
 
   // surface roughness is equal to fit error:
@@ -140,8 +141,6 @@ void fit_linear_flow_field(struct flow_t *vectors, int count, float error_thresh
   float _bb[count][1];
   MAKE_MATRIX_PTR(bb, _bb, count);
   float _C[count][1];
-
-
   MAKE_MATRIX_PTR(C, _C, count);
 
   // ***************

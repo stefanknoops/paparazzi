@@ -95,7 +95,7 @@ void farneback_periodic(struct image_t *img)
     //return;
  // };
 
-	safe_time = ttc_calculator_func(struct image_t *img);
+	//safe_time = ttc_calculator_func();
 
   VERBOSE_PRINT("Color_count: %f  threshold: %f state: %d \n", safe_time, safe_time_threshold, navigation_state);
 

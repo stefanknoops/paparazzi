@@ -1,19 +1,21 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="farneback_avoider" dir="farneback_avoider">
+<module name="modulettc">
   <doc>
-    <description>Assignment 2019 by Group 5</description>
- <define name="FARNEBACK_AVOIDER_VISUAL_DETECTION" value="ABI_BROADCAST" description="which VISUAL_DETECTION message to recieve for orange pole detection."/>
- 
+    <description>Calculates the time to contact from farneback optical flow vectors</description>
   </doc>
   <header>
-    <file name="farneback_avoider.h"/>
+    <file name="modulettc.h"/>
   </header>
-  <init fun="farneback_init()"/>
-  <periodic fun="farneback_periodic()" freq="4" autorun="TRUE"/>
- <makefile target="nps">
-       <file name="farneback_avoider.c"/>
-		    <flag name="CFLAGS" value="I$(PAPARAZZI_SRC)/sw/ext/opencv_bebop/install_pc/include"/>
+  <init fun="ttc_init()"/>
+  <periodic fun="ttc_periodic" freq="5" autorun="TRUE"/>
+  <makefile>
+    <file name="modulettc.c"/>
+    <file name="Farneback_calculator.cpp" dir="modules/farneback_avoider"/>
+    <file name="linear_flow_fit.c" dir="modules/computer_vision/opticflow"/>
+    <file name="pprz_algebra_float.c" dir="math"/>
+    <file name="pprz_matrix_decomp_float.c" dir="math"/>
+		<flag name="CFLAGS" value="I$(PAPARAZZI_SRC)/sw/ext/opencv_bebop/install_pc/include"/>
 		    <flag name="LDFLAGS" value="L$(PAPARAZZI_HOME)/sw/ext/opencv_bebop/install_pc/lib"/>
 			<flag name="LDFLAGS" value="lopencv_world"/>
 			<flag name="LDFLAGS" value="L$(PAPARAZZI_HOME)/sw/ext/opencv_bebop/install_pc/share/OpenCV/3rdparty/lib"/>
@@ -27,7 +29,7 @@
 			<flag name="LDFLAGS" value="ldl"/>
 			<flag name="LDFLAGS" value="lm"/>
 			<flag name="LDFLAGS" value="lpthread"/>
-			<flag name="LDFLAGS" value="lrt"/>     
+			<flag name="LDFLAGS" value="lrt"/> 
   </makefile>
 </module>
 

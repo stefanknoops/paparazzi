@@ -1,16 +1,33 @@
-// Own header
-#include "TTC_calculator.h"
+/*
+ * Copyright (C) Group 5
+ *
+ * This file is part of paparazzi
+ *
+ * paparazzi is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * paparazzi is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with paparazzi; see the file COPYING.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
+/**
+ * @file "modules/modulettc/modulettc.c"
+ * @author Group 5
+ * Calculates the time to contact from farneback optical flow vectors
+ */
+
+#include "modules/modulettc/modulettc.h"
 
 #include "modules/computer_vision/cv.h"
 #include "subsystems/abi.h"
 #include "std.h"
-#include <opencv/cv.h>
-#include <opencv2/core/core_c.h>
-#include <opencv2/imgproc/imgproc_c.h>
-#include <opencv2/video/tracking_c.h>
-#include <opencv2/core/types_c.h>
-#include <opencv2/imgproc/imgproc_c.h>
-#include "Farneback_calculator.h"
 #include "modules/computer_vision/lib/vision/image.h"
 #include "modules/computer_vision/opticflow/linear_flow_fit.h"
 #include "modules/farneback_avoider/Farneback_calculator.h"
@@ -21,15 +38,6 @@
 #include <math.h>
 #include "pthread.h"
 
-
-//nog aanpassen
-#define PRINT(string,...) fprintf(stderr, "[object_detector->%s()] " string,__FUNCTION__ , ##__VA_ARGS__)
-#if OBJECT_DETECTOR_VERBOSE
-#define VERBOSE_PRINT PRINT
-#else
-#define VERBOSE_PRINT(...)
-#endif
-
 static pthread_mutex_t mutex;
 
 #ifndef TTC_FPS
@@ -39,17 +47,15 @@ static pthread_mutex_t mutex;
 //settings (hier de constanten definen)
 float error_threshold = 10.0;
 int n_iterations = 100;
-int n_samples = 5000;
+int n_samples = 50;
 
 struct image_t *img;
-//define global variables
-//geen nieuwe gedefinieerd (staan allemaal al in image.h of op andere plekken)
 
 float *ttc = 0;
 float *ttc_glob = 0;
 
-//hier de main functie
-float ttc_calculator_func()
+struct image_t *calc_ttc(struct image_t *img);
+struct image_t *calc_ttc(struct image_t *img)
 {
 	printf("Hier print hij nog 22\n");
 	printf("%d",img->h);
@@ -63,7 +69,7 @@ float ttc_calculator_func()
 
     	int count = 60 * 130;
     	int im_width = 60; //not sure about this, check how reference frame is defined
-    	int im_height = 130;
+    	int im_height = 60;
     	struct linear_flow_fit_info info;
     	struct linear_flow_fit_info *info_ptr;
     	info_ptr = &info;
@@ -74,26 +80,21 @@ float ttc_calculator_func()
   }
 	printf("Hier print hij weer 5\n");
 
-  return *ttc;
+  return NULL;
 }
 
-//hier de init (voor de mutexen)
-
-
-void ttc_calc_init(void)  
+void ttc_init(void)
 {
 	memset(ttc_glob, 0, sizeof(float));
   	pthread_mutex_init(&mutex, NULL);
-  	cv_add_to_device(&FARNEBACK_CAMERA, ttc_calculator_func, TTC_FPS); //tweede argument is volgens mij gewoon de afbeelding
-
-
+  	cv_add_to_device(&FARNEBACK_CAMERA2, calc_ttc, TTC_FPS); //tweede argument is volgens mij gewoon de afbeelding
 }
-void ttc_calc_periodic(void)
-{
-  //float ttc_final;
+
+void ttc_periodic(void){
+float ttc_final;
   pthread_mutex_lock(&mutex);
   memcpy(ttc_glob, ttc, sizeof(float));
   pthread_mutex_unlock(&mutex);
-
 }
+
 
