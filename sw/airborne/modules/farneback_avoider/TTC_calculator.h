@@ -25,10 +25,9 @@
 #ifndef TTC_CALCULATOR_H_
 #define TTC_CALCULATOR_H_
 
-extern void ttc_calc_init(void) ;
-extern void ttc_calc_periodic(void);
+extern void ttc_calc_init() ;
+extern void ttc_calc_periodic();
 extern float ttc_calculator_func();
-struct image_t *image_func(struct image_t *img);
 
 
 

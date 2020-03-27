@@ -49,8 +49,10 @@ float *ttc = 0;
 float *ttc_glob = 0;
 
 //hier de main functie
-float ttc_calculator_func()
+float ttc_func()
 {
+	  printf("in ttc calc func");
+
 	printf("Hier print hij nog 22\n");
 	printf("%d",img->h);
   //image_yuv422_downsample(img,img,16);
@@ -80,20 +82,23 @@ float ttc_calculator_func()
 //hier de init (voor de mutexen)
 
 
-void ttc_calc_init(void)  
+void ttc_init()
 {
 	memset(ttc_glob, 0, sizeof(float));
   	pthread_mutex_init(&mutex, NULL);
   	cv_add_to_device(&FARNEBACK_CAMERA, ttc_calculator_func, TTC_FPS); //tweede argument is volgens mij gewoon de afbeelding
+    printf("ttc calc init gelukt");
 
 
 }
-void ttc_calc_periodic(void)
+void ttc_calc_periodic()
 {
-  //float ttc_final;
+  /*/float ttc_final;
   pthread_mutex_lock(&mutex);
   memcpy(ttc_glob, ttc, sizeof(float));
   pthread_mutex_unlock(&mutex);
+	*/
+	  printf("in ttc calc periodic");
 
 }
 

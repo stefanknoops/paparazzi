@@ -84,11 +84,13 @@ void farneback_init(void) {
 	  // Initialise random values
 	  srand(time(NULL));
 	  chooseRandomIncrementAvoidance();
+	  printf("farneback init gelukt \n");
+
 }
 
 void farneback_periodic(struct image_t *img)
 {
-	 printf("Hier print hij nog 1\n");
+	  printf("farneback periodic begin \n");
 
 	// only evaluate our state machine if we are flying
 	//if(!autopilot_in_flight()){
@@ -226,6 +228,7 @@ uint8_t moveWaypointForward(uint8_t waypoint, float distanceMeters)
  */
 uint8_t chooseRandomIncrementAvoidance(void)
 {
+
   // Randomly choose CW or CCW avoiding direction
   if (rand() % 2 == 0) {
     heading_increment = 5.f;
@@ -234,7 +237,10 @@ uint8_t chooseRandomIncrementAvoidance(void)
     heading_increment = -5.f;
     VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
   }
+  printf("choose random increment gelukt \n");
+
   return false;
+
 }
 
 

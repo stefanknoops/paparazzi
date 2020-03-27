@@ -52,7 +52,7 @@ int n_samples = 50;
 struct image_t *img;
 
 float *ttc = 0;
-float *ttc_glob = 0;
+float *ttc_glob2 = 0;
 
 struct image_t *calc_ttc(struct image_t *img);
 struct image_t *calc_ttc(struct image_t *img)
@@ -85,16 +85,26 @@ struct image_t *calc_ttc(struct image_t *img)
 
 void ttc_init(void)
 {
-	memset(ttc_glob, 0, sizeof(float));
+	 printf("ttc init \n");
+
+	//memset(ttc_glob2, 0, sizeof(float));
+	 printf("ttc init 2 \n");
+
   	pthread_mutex_init(&mutex, NULL);
+	 printf("ttc init 3 \n");
+
   	cv_add_to_device(&FARNEBACK_CAMERA2, calc_ttc, TTC_FPS); //tweede argument is volgens mij gewoon de afbeelding
+	 printf("ttc init 4 \n");
+
 }
 
 void ttc_periodic(void){
 float ttc_final;
   pthread_mutex_lock(&mutex);
-  memcpy(ttc_glob, ttc, sizeof(float));
+  memcpy(ttc_glob2, ttc, sizeof(float));
   pthread_mutex_unlock(&mutex);
+  printf("ttc periodic \n");
+
 }
 
 

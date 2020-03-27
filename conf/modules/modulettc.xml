@@ -8,8 +8,8 @@
     <file name="modulettc.h"/>
   </header>
   <init fun="ttc_init()"/>
-  <periodic fun="ttc_periodic" freq="5" autorun="TRUE"/>
-  <makefile>
+  <periodic fun="ttc_periodic()" freq="4" autorun="TRUE"/>
+  <makefile target="nps">
     <file name="modulettc.c"/>
     <file name="Farneback_calculator.cpp" dir="modules/farneback_avoider"/>
     <file name="linear_flow_fit.c" dir="modules/computer_vision/opticflow"/>
