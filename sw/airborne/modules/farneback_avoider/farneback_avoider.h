@@ -18,16 +18,17 @@
  * <http://www.gnu.org/licenses/>.
  */
 /**
- * @file "modules/farneback-avoider/farneback-avoider.h"
+ * @file "modules/farneback-avoider/farneback_avoider.h"
  * @author Stefan en de rest
  * Assignment 2019
  */
+#include "modules/computer_vision/lib/vision/image.h"
 
-#ifndef FARNEBACK-AVOIDER_H
-#define FARNEBACK-AVOIDER_H
+#ifndef FARNEBACK_AVOIDER_H
+#define FARNEBACK_AVOIDER_H
 
-// extern void farneback_init;
-// extern void farneback_periodic;
+void farneback_init(void);
+void farneback_periodic();
 
 #endif
 

@@ -24,13 +24,15 @@
  */
 #include "modules/farneback_avoider/farneback_avoider.h"
 #include "modules/computer_vision/cv.h"
-#include "modules/computer_vision/opencv_example2.hpp" //staat nu wel op een gekke plek maar prima // we moeten deze wel nog maken
+
 #include "firmwares/rotorcraft/navigation.h"
 #include "generated/airframe.h"
 #include "state.h"
 #include "subsystems/abi.h"
 #include <time.h>
 #include <stdio.h>
+#include "TTC_calculator.h"
+#include "modules/computer_vision/lib/vision/image.h"
 
 #ifndef FARNEBACK_FPS
 #define FARNEBACK_FPS 0       ///< Default FPS (zero means run at camera fps)
@@ -51,36 +53,36 @@ enum navigation_state_t {
   SEARCH_FOR_SAFE_HEADING,
   OUT_OF_BOUNDS
 };
-// define and initialise global variables
+// define and initialize global variables
 enum navigation_state_t navigation_state = SEARCH_FOR_SAFE_HEADING;
 int16_t obstacle_free_confidence = 0;   // a measure of how certain we are that the way ahead is safe.
 float heading_increment = 5.f;          // heading angle increment [deg]
 float maxDistance = 2.25;               // max waypoint displacement [m]
 float ttc = 0;
 float ttc_temp = 0;
+float safe_time = 0;
+float safe_time_threshold = 0;
 
 const int16_t max_trajectory_confidence = 5; // number of consecutive negative object detections to be sure we are obstacle free
 
+#define FARNEBACK_AVOIDER_VERBOSE TRUE
 
+#define PRINT(string,...) fprintf(stderr, "[farneback_avoider->%s()] " string,__FUNCTION__ , ##__VA_ARGS__)
+#if FARNEBACK_AVOIDER_VERBOSE
 
-
-#ifndef ORANGE_AVOIDER_VISUAL_DETECTION_ID
-#define ORANGE_AVOIDER_VISUAL_DETECTION_ID ABI_BROADCAST
+#define VERBOSE_PRINT PRINT
+#else
+#define VERBOSE_PRINT(...)
 #endif
-static abi_event farneback_detection_ev;
-bool new_ttc = false;
-static void farneback_detection_cb(ttc_final) //HIER DE TTC AANPASSEN (opencvexample)
-		{
-		  safe_time = ttc_final;
-		}
 
+#ifndef FARNEBACK_AVOIDER_COLLISION_DETECTION
+#define FARNEBACK_AVOIDER_COLLISION_DETECTION ABI_BROADCAST
+#endif
 
-void farneback_init(struct image_t *img) {
+void farneback_init(void) {
 	  // Initialise random values
 	  srand(time(NULL));
 	  chooseRandomIncrementAvoidance();
-  //pas airframe aan in xml
-  AbiBindMsgCOLLISION_DETECTION(FARNEBACK_AVOIDER_COLLISION_DETECTION, &farneback_detection_ev, farneback_detection_cb); //dit gebruiken om hem in orange avoider te implementen
 }
 
 void farneback_periodic()
@@ -88,10 +90,10 @@ void farneback_periodic()
 	// only evaluate our state machine if we are flying
 	if(!autopilot_in_flight()){
     return;
-  }
+  };
   //is deze if hier nodig? Zo ja moeten we de conditie ergens updaten
-
-  VERBOSE_PRINT("Color_count: %d  threshold: %d state: %d \n", safe_time, safe_time_threshold, navigation_state);
+safe_time = ttc_calculator_func();
+  VERBOSE_PRINT("Color_count: %f  threshold: %f state: %d \n", safe_time, safe_time_threshold, navigation_state);
 
   // update our safe confidence using color threshold
   if(safe_time > safe_time_threshold){

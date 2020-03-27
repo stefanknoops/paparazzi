@@ -1,17 +1,17 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="farneback-avoider" dir="farneback-avoider">
+<module name="farneback_avoider" dir="farneback_avoider">
   <doc>
     <description>Assignment 2019 by Group 5</description>
+ <define name="FARNEBACK_AVOIDER_VISUAL_DETECTION" value="ABI_BROADCAST" description="which VISUAL_DETECTION message to recieve for orange pole detection."/>
   </doc>
   <header>
-    <file name="farneback-avoider.h"/>
+    <file name="farneback_avoider.h"/>
   </header>
-  <init fun="farneback_init"/>
-  <periodic fun="farneback_periodic" freq="4" autorun="TRUE"/>
-  <makefile>
-    <file name="farneback-avoider.c"/>   <makefile target="nps">
-       <file name="orange_avoider.c"/>
+  <init fun="farneback_init()"/>
+  <periodic fun="farneback_periodic()" freq="4" autorun="TRUE"/>
+ <makefile target="nps">
+       <file name="farneback_avoider.c"/>
        <flag name="CFLAGS" value="I$(PAPARAZZI_SRC)/sw/ext/opencv_bebop/install_pc/include"/>
 		    <flag name="LDFLAGS" value="L$(PAPARAZZI_HOME)/sw/ext/opencv_bebop/install_pc/lib"/>
 			<flag name="LDFLAGS" value="lopencv_world"/>
