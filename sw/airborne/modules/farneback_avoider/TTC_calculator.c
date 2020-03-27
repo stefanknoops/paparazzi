@@ -42,7 +42,8 @@ struct image_t *img;
 //define global variables
 //geen nieuwe gedefinieerd (staan allemaal al in image.h of op andere plekken)
 
-float ttc = 0;
+float *ttc = 0;
+float *ttc_glob = 0;
 
 //hier de main functie
 float ttc_calculator_func(void)
@@ -58,29 +59,27 @@ float ttc_calculator_func(void)
     	struct linear_flow_fit_info *info_ptr;
     	info_ptr = &info;
     	bool test = analyze_linear_flow_field(vector_ptr, count, error_threshold, n_iterations, n_samples, im_width, im_height, &info);
-    	ttc = info->time_to_contact;
+    	*ttc = info->time_to_contact;
   }
-  return ttc;
+  //return ttc;
 }
 
 //hier de init (voor de mutexen)
 void ttc_calc_init(void)  
 {
-	memset(ttc_final, 0, sizeof(float));
-  	pthread_mutex_init(&mutex, NULL)
+	memset(*ttc_glob, 0, sizeof(float));
+  	pthread_mutex_init(&mutex, NULL);
   	cv_add_to_device(&FARNEBACK_CAMERA, img, TTC_FPS); //tweede argument is volgens mij gewoon de afbeelding
 
 
 }
 void ttc_calc_periodic(void)
 {
-	/*
-  static float ttc_final;
-  pthread_mutex_lock(&mutex);
-  memcpy(ttc_final, ttc, sizeof(float));
-  pthread_mutex_unlock(&mutex); */
-  }
 
-  }
+  //float ttc_final;
+  pthread_mutex_lock(&mutex);
+  memcpy(*ttc_glob, *ttc, sizeof(float));
+  pthread_mutex_unlock(&mutex);
+
 }
 
