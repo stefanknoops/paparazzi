@@ -12,6 +12,8 @@
     <dl_settings>
       <dl_settings name="ColorObjectDetector">
          <dl_setting var="n_iterations" min="1" step="1" max="255" shortname="n_itts"/>
+	 <dl_setting var="error_threshold" min="1" step="1" max="50" shortname="err_th"/>
+	 <dl_setting var="n_samples" min="3" step="1" max="1000" shortname="n_samp"/>
       </dl_settings>
     </dl_settings>
 </settings>

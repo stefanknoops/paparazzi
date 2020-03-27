@@ -27,6 +27,8 @@
 #define OPENCV_EXAMPLE_H
 
 extern int n_iterations;
+extern float error_threshold;
+extern int n_samples;
 
 extern float EWMA(float *history_ttc, int size_history, float degree_of_decrease);
 
