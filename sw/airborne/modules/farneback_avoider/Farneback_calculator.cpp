@@ -33,19 +33,21 @@ struct flow_t* farneback_flow(char *img, int width, int height)
 		printf("Hier print hij nog III\n");
 
 	  resize(crop_image, crop_image, Size(),0.25,0.25,INTER_AREA);
-		printf("Hier print hij nog IIII\n");
+		printf("Hier print hij nog IV\n");
 
 	  if (prev_image.empty()){
-	  		 prev_image = image;
+	  		 prev_image = crop_image;
 	  	 	 }
-		printf("Hier print hij nog IIIII\n");
+		printf("Hier print hij nog V\n");
 
+		//printf("image test: %d \n", crop_image.cols);
+		//printf("image test: %d \n", crop_image.rows);
 	 // apply farneback to find dense optical flow
 	 calcOpticalFlowFarneback(prev_image, crop_image, uflow, 0.5, 3, 15, 10, 7, 1.2, 0);
-		printf("Hier print hij nog IIIIII\n");
+		printf("Hier print hij nog VI\n");
 
 	 prev_image = crop_image;
-		printf("Hier print hij nog IIIIIII\n");
+		printf("Hier print hij nog VII\n");
 
 	 // fill struct with flow vectors
 	 struct flow_t vectors[uflow.cols * uflow.rows];

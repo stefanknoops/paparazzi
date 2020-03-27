@@ -67,7 +67,7 @@ struct image_t *calc_ttc(struct image_t *img)
     	struct flow_t *vector_ptr = farneback_flow((char *) img->buf, img->w, img->h); //deze functie moet vervangen worden door de uiteindelijk
     	printf("Hier print hij nog 4\n");
 
-    	int count = 60 * 130;
+    	int count = 60 * 60 / 9.0f;
     	int im_width = 60; //not sure about this, check how reference frame is defined
     	int im_height = 60;
     	struct linear_flow_fit_info info;
@@ -77,6 +77,7 @@ struct image_t *calc_ttc(struct image_t *img)
     	bool test = analyze_linear_flow_field(vector_ptr, count, error_threshold, n_iterations, n_samples, im_width, im_height, &info);
     	printf("it works");
     	*ttc = info.time_to_contact;
+    	printf("hier print hij nog XIII");
   }
 	printf("Hier print hij weer 5\n");
 
