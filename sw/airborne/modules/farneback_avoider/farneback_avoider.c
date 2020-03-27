@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include "TTC_calculator.h"
 #include "modules/computer_vision/lib/vision/image.h"
+//#include "modules/farneback_avoider/Farneback_calculator.h"
 
 #ifndef FARNEBACK_FPS
 #define FARNEBACK_FPS 0       ///< Default FPS (zero means run at camera fps)
@@ -58,7 +59,7 @@ enum navigation_state_t navigation_state = SEARCH_FOR_SAFE_HEADING;
 int16_t obstacle_free_confidence = 0;   // a measure of how certain we are that the way ahead is safe.
 float heading_increment = 5.f;          // heading angle increment [deg]
 float maxDistance = 2.25;               // max waypoint displacement [m]
-float ttc = 0;
+//float ttc = 0;
 float ttc_temp = 0;
 float safe_time = 0;
 float safe_time_threshold = 0;

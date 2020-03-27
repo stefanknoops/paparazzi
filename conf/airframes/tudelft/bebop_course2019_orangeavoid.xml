@@ -78,9 +78,6 @@
     	<define name="FARNEBACK_CAMERA" value="front_camera"/>
       <define name="FARNEBACK_AVOIDER_COLLISSION_DETECTION_ID" value="FARNEBACK_COLLISION"/>
     </module>
-    <module name="cv_opticflow">
-	<define name="OPTICFLOW_CAMERA" value =	"front_camera"/>
-    </module>
     <module name="video_rtp_stream">
       <define name="VIEWVIDEO_CAMERA" value="front_camera"/>
       <define name="VIEWVIDEO_CAMERA2" value="bottom_camera"/>

@@ -13,7 +13,7 @@
 #include "Farneback_calculator.h"
 #include "modules/computer_vision/lib/vision/image.h"
 #include "modules/computer_vision/opticflow/linear_flow_fit.h"
-#include "modules/farneback_avoider/Farneback_calculator.cpp"
+#include "modules/farneback_avoider/Farneback_calculator.h"
 
 
 #include <stdio.h>
@@ -39,7 +39,7 @@ static pthread_mutex_t mutex;
 //settings (hier de constanten definen)
 float error_threshold = 10.0;
 int n_iterations = 100;
-int n_samples = 1000;
+int n_samples = 5000;
 
 struct image_t *img;
 //define global variables
@@ -52,17 +52,21 @@ float *ttc_glob = 0;
 float ttc_calculator_func(void);
 float ttc_calculator_func(void)
 {
+	printf("this works still \n");
   //image_yuv422_downsample(img,img,16);
   if (img->type == IMAGE_YUV422) {
    	// Call OpenCV (C++ from paparazzi C function)
+
     	struct flow_t *vector_ptr = farneback_flow((char *) img->buf, img->w, img->h); //deze functie moet vervangen worden door de uiteindelijk
-    	int count = img->w * img->h;
-    	int im_width = img->w; //not sure about this, check how reference frame is defined
-    	int im_height = img->h;
+    	int count = 60 * 130;
+    	int im_width = 60; //not sure about this, check how reference frame is defined
+    	int im_height = 130;
     	struct linear_flow_fit_info info;
     	struct linear_flow_fit_info *info_ptr;
     	info_ptr = &info;
+    	printf("this works still \n");
     	bool test = analyze_linear_flow_field(vector_ptr, count, error_threshold, n_iterations, n_samples, im_width, im_height, &info);
+    	printf("it works");
     	*ttc = info.time_to_contact;
   }
   //return ttc;
