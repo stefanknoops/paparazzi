@@ -38,6 +38,10 @@
 #include <math.h>
 #include "pthread.h"
 
+#ifndef FARNEBACK_AVOIDER_COLLISION_DETECTION
+#define FARNEBACK_AVOIDER_COLLISION_DETECTION ABI_BROADCAST
+#endif
+
 static pthread_mutex_t mutex;
 
 #ifndef TTC_FPS
@@ -51,9 +55,8 @@ int n_samples = 50;
 
 struct image_t *img;
 
-float ttc;
 float ttc_glob2;
-
+bool ttc_updated = false;
 struct image_t *calc_ttc(struct image_t *img);
 struct image_t *calc_ttc(struct image_t *img)
 {
@@ -82,6 +85,7 @@ struct image_t *calc_ttc(struct image_t *img)
     	pthread_mutex_lock(&mutex);
     	  ttc_glob2 = info.time_to_contact*(1.0f/15.0f);
     	pthread_mutex_unlock(&mutex);
+    	ttc_updated = true;
   }
 	//printf("Hier print hij weer 5\n");
 
@@ -101,15 +105,23 @@ void ttc_init(void)
   	cv_add_to_device(&FARNEBACK_CAMERA2, calc_ttc, TTC_FPS); //tweede argument is volgens mij gewoon de afbeelding
 	 printf("ttc init 4 \n");
 
+
 }
 
 void ttc_periodic(void){
-float ttc_final;
 //printf("print ie dit nog");
+	float ttc;
   pthread_mutex_lock(&mutex);
   memcpy(&ttc, &ttc_glob2, sizeof(float));
   pthread_mutex_unlock(&mutex);
 printf("ttc na pthread= %f \n", ttc);
+
+if(ttc_updated){
+    AbiSendMsgFARNEBACK_DETECTION(FARNEBACK_AVOIDER_COLLISION_DETECTION, ttc);
+    ttc_updated = false;
+    printf("ttc NA ABI=%f\n",ttc);
+
+  }
 
 }
 

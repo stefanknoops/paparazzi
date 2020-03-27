@@ -182,8 +182,8 @@
       <field name="yaw"    type="float">Radio-Control Manual Yaw Setpoint</field>
     </message>
 
-    <message name="COLLISION_DETECTION" id="27">
-      <field name="ttc_final"        type="float">ttc as calculated through the farneback method</field>
+    <message name="FARNEBACK_DETECTION" id="27">
+      <field name="ttc"        type="float">ttc as calculated through the farneback method</field>
     </message>
 
   </msg_class>
