@@ -33,13 +33,14 @@
 #include "modules/computer_vision/opticflow/linear_flow_fit.h"
 
 
+
 #ifndef OPENCVDEMO_FPS
 #define OPENCVDEMO_FPS 0       ///< Default FPS (zero means run at camera fps)
 #endif
 PRINT_CONFIG_VAR(OPENCVDEMO_FPS)
 
 #ifndef size_smooth
-#define size_smooth 5
+#define size_smooth 6
 #endif
 
 float history_ttc[size_smooth];
@@ -79,21 +80,32 @@ struct image_t *opencv_func(struct image_t *img)
 	bool test = analyze_linear_flow_field(vector_ptr, count, error_threshold, n_iterations, n_samples, im_width, im_height, &info);
     float ttc = info.time_to_contact;
 
-    ttc = abs(ttc);
+    ttc = abs(ttc)*1.0f/20.0f;
 
     if (history_ttc[0] == 0.0f){
+    	if(ttc > 10){
+    		ttc = 5.0f;
+    	}
     	for (int i=0 ; i< (size_smooth); i++){
     		history_ttc[i] = ttc;
     	}
     }
     else{
+    	if(ttc > 5){
+    		if (history_ttc[0] < 3){
+    			ttc = 3.0f;//history_ttc[0];
+    		}
+    		else{
+    			ttc = 5.0f;//history_ttc[0];
+    		}
+    	}
     	for (int i=size_smooth; i>1;i -=1){
     		history_ttc[i-1] = history_ttc[i-2];
     	}
     	history_ttc[0] = ttc;
     }
-    float smooth_ttc = EWMA(&history_ttc,size_smooth,0.5);
-    printf("%f \n", ttc * 1.0f/30.0f);
+    float smooth_ttc = EWMA(&history_ttc,size_smooth,0.6);
+    printf("%f \n", smooth_ttc);
 
   }
     // opencv_example(NULL, 10,10);
@@ -107,6 +119,6 @@ struct image_t *opencv_func(struct image_t *img)
 
 void opencvdemo_init(void)
 {
-  cv_add_to_device(&OPENCVDEMO_CAMERA, opencv_func, 30);
+  cv_add_to_device(&OPENCVDEMO_CAMERA, opencv_func, 20);
 }
 

@@ -31,30 +31,41 @@ struct flow_t* opencv_example(char *img, int width, int height)
 	 {
 	     Mat im = imread(fn[k],CV_LOAD_IMAGE_GRAYSCALE);
 	     //cout << outt << endl;
-	     //Mat cropped_image = im;
-	     Mat cropped_image = im(Rect(0,125,240,240));
+	     Mat cropped_image = im;
+	     //Mat cropped_image = im(Rect(0,125,240,240));
 	     if (im.empty()) continue; //only proceed if sucsessful
 	     data.push_back(cropped_image);
 	 	 }
 
 
 	 for (size_t k =0; k < data.size(); k ++){
-		 resize(data[k],data[k],Size(),0.25,0.25,INTER_AREA);
+		 //resize(data[k],data[k],Size(),0.25,0.25,INTER_AREA);
 	 }
 	 // Create a new image, using the original bebop image, use this when camera is taken as input
-	 // Mat M(height, width, CV_8UC2, img);
-	 // Mat image;
-	 // cvtColor(M, image, CV_YUV2GRAY_Y422);
-	 // if (prev_image.empty()){
-	//	 prev_image = image;
-	 //	 }
+	 Mat M(height, width, CV_8UC2, img);
+	 Mat image;
+	 cvtColor(M, image, CV_YUV2GRAY_Y422);
+
+	// Mat image = data[ind];
+
+	 Mat crop_image = image(Rect(0,125,240,240));
+
 
 	 Mat flow, cflow, frame;
 	 Mat gray, prevgray, uflow;
 
+	 resize(crop_image, crop_image, Size(),0.25,0.25,INTER_AREA);
+
+
+	 if (prev_image.empty()){
+		 prev_image = crop_image;
+	 	 }
+
+
+
 	 // import small test data set
-	 Mat image1_temp = data[ind];//imread("/home/daan/Documents/AE4317_2019_datasets/Pictures/31537000.jpg", CV_LOAD_IMAGE_GRAYSCALE);
-	 Mat image2_temp = data[ind +1];//imread("/home/daan/Documents/AE4317_2019_datasets/Pictures/31639000.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+	 //Mat image1_temp = data[ind];//imread("/home/daan/Documents/AE4317_2019_datasets/Pictures/31537000.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+	 //Mat image2_temp = data[ind +1];//imread("/home/daan/Documents/AE4317_2019_datasets/Pictures/31639000.jpg", CV_LOAD_IMAGE_GRAYSCALE);
 
      //resize(image1_temp, image1_temp, Size(),0.25,0.25,INTER_AREA);
      //resize(image2_temp, image2_temp, Size(),0.25,0.25,INTER_AREA);
@@ -63,9 +74,9 @@ struct flow_t* opencv_example(char *img, int width, int height)
 	 //Mat image2_temp_cropped = image2_temp(Rect(0,125,240,240));
 
 	 // apply farneback to find dense optical flow
-	 //calcOpticalFlowFarneback(prev_image, image, uflow, 0.5, 3, 15, 3, 5, 1.2, 0);
-	 calcOpticalFlowFarneback(image1_temp, image2_temp, uflow, 0.5, 3, 15, 10, 7, 1.2, 0);
-	 //prev_image = image;
+	 calcOpticalFlowFarneback(prev_image, crop_image, uflow, 0.5, 3, 15, 10, 7, 1.2, 0);
+	 //calcOpticalFlowFarneback(image1_temp, image2_temp, uflow, 0.5, 3, 15, 10, 7, 1.2, 0);
+	 prev_image = crop_image;
 
 	 // fill struct with flow vectors
 	 struct flow_t vectors[uflow.cols * uflow.rows];
