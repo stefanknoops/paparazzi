@@ -45,7 +45,7 @@
 #endif
 
 #ifndef TTC_FPS
-#define TTC_FPS 20 ///< Default FPS (zero means run at camera fps)
+#define TTC_FPS 10 ///< Default FPS (zero means run at camera fps)
 #endif
 
 #ifndef size_smooth
@@ -126,8 +126,9 @@ struct image_t *calc_ttc(struct image_t *img)
     		}
     		history_ttc[0] = vid_ttc;
     	}
-    	printf("alpha = %f \n", degree_of_decrease);
+    	//printf("alpha = %f \n", degree_of_decrease);
     	float smooth_ttc = EWMA(&history_ttc,size_smooth,degree_of_decrease);
+    	printf("DATA CREATED: %f \n", smooth_ttc);
     	pthread_mutex_lock(&mutex);
     		ttc_glob2 = smooth_ttc;
     	pthread_mutex_unlock(&mutex);
@@ -151,7 +152,9 @@ void ttc_periodic(void){
 
 	if(ttc_updated){
 		AbiSendMsgFARNEBACK_DETECTION(FARNEBACK_AVOIDER_COLLISION_DETECTION, ttc);
+		printf("DATA SEND: %f \n", ttc);
 		ttc_updated = false;
+
 	}
 }
 

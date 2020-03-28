@@ -27,7 +27,7 @@
     <file name="modulettc.h"/>
   </header>
   <init fun="ttc_init()"/>
-  <periodic fun="ttc_periodic()" freq="4" autorun="TRUE"/>
+  <periodic fun="ttc_periodic()" freq="20" autorun="TRUE"/>
   <makefile target="nps">
     <file name="modulettc.c"/>
     <file name="Farneback_calculator.cpp" dir="modules/farneback_avoider"/>
