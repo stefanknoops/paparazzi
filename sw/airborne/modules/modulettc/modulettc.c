@@ -132,7 +132,7 @@ struct image_t *calc_ttc(struct image_t *img)
     		ttc_glob2 = smooth_ttc;
     	pthread_mutex_unlock(&mutex);
     	ttc_updated = true;
-    	printf("smooth ttc %f \n", smooth_ttc);
+    	//printf("smooth ttc %f \n", smooth_ttc);
   }
   return img;
 }

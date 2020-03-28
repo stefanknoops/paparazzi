@@ -120,6 +120,7 @@ void farneback_periodic(struct image_t *img)
   // update our safe confidence using color thresholdF
   if (TURNING){
 	  safe_time = 5;
+	  printf("turning is true \n");
   }
   if(safe_time > safe_time_threshold){
     test_free_confidence++;
@@ -141,7 +142,7 @@ void farneback_periodic(struct image_t *img)
   float moveDistance = fminf(maxDistance, 0.2f * obstacle_free_confidence);
   moveDistance = maxDistance;
 
-  navigation_state = SAFE;
+  //navigation_state = SAFE;
 
   switch (navigation_state){
     case SAFE:
