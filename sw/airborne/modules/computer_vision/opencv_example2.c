@@ -44,6 +44,7 @@ PRINT_CONFIG_VAR(OPENCVDEMO_FPS)
 #endif
 
 float history_ttc[size_smooth];
+float real_last_ttc;
 
 float EWMA(float *history_ttc, int size_history, float degree_of_decrease)
 {
@@ -81,7 +82,8 @@ struct image_t *opencv_func(struct image_t *img)
     float ttc = info.time_to_contact;
 
     ttc = abs(ttc)*1.0f/20.0f;
-    printf("%f \n", ttc);
+    real_last_ttc = ttc;
+
 
     if (history_ttc[0] == 0.0f){
     	if(ttc > 5){
@@ -93,11 +95,11 @@ struct image_t *opencv_func(struct image_t *img)
     }
     else{
     	if(ttc > 5){
-    		if (history_ttc[0] < 3){
+    		if (real_last_ttc < 3.0){
     			ttc = history_ttc[0];
     		}
     		else{
-    			ttc = history_ttc[0];
+    			ttc = 5.0f; // history_ttc[0];
     		}
     	}
     	for (int i=size_smooth; i>1;i -=1){
@@ -105,8 +107,9 @@ struct image_t *opencv_func(struct image_t *img)
     	}
     	history_ttc[0] = ttc;
     }
-    float smooth_ttc = EWMA(&history_ttc,size_smooth,0.6);
+    float smooth_ttc = EWMA(&history_ttc,size_smooth,0.5);
 
+    printf("%f \n", smooth_ttc);
 
   }
     // opencv_example(NULL, 10,10);
