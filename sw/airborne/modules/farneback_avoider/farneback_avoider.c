@@ -84,8 +84,8 @@ static abi_event farneback_detection_ev;
 static void farneback_detection_cb(int __attribute__((unused)) senderid, float ttc) //HIER DE TTC AANPASSEN (opencvexample)
 		{
 		  safe_time = ttc;
-		  printf("safe_time NA OVERSCHRIJVEN SAFE TIME= %f \n",safe_time);
-		  printf("ttc NA OVERSCHRIJVEN SAFE TIME= %f \n",ttc);
+		  //printf("safe_time NA OVERSCHRIJVEN SAFE TIME= %f \n",safe_time);
+		  //printf("ttc NA OVERSCHRIJVEN SAFE TIME= %f \n",ttc);
 
 
 		}
@@ -103,7 +103,7 @@ void farneback_init(void) {
 
 void farneback_periodic(struct image_t *img)
 {
-	  printf("farneback periodic begin \n");
+	  //printf("farneback periodic begin \n");
 
 	// only evaluate our state machine if we are flying
 	if(!autopilot_in_flight()){

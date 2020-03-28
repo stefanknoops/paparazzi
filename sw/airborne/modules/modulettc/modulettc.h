@@ -26,7 +26,10 @@
 #ifndef MODULETTC_H
 #define MODULETTC_H
 
+extern float EWMA(float *history_ttc, int size_history, float degree_of_decrease);
+
 extern void ttc_init();
+
 extern void ttc_periodic();
 
 
