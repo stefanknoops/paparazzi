@@ -31,6 +31,7 @@
 #include "subsystems/abi.h"
 #include <time.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include "TTC_calculator.h"
 #include "modules/computer_vision/lib/vision/image.h"
 //#include "modules/farneback_avoider/Farneback_calculator.h"
@@ -63,8 +64,9 @@ float maxDistance = 2.25;               // max waypoint displacement [m]
 float ttc_temp = 0;
 float safe_time = 0;
 float safe_time_threshold = 3.3;
-float test_free_confidence = 5.0;
-bool TURNING;
+int test_free_confidence = 5;
+int TURNING = 0;
+int turn_counter = 0;
 
 const int16_t max_trajectory_confidence = 5; // number of consecutive negative object detections to be sure we are obstacle free
 
@@ -113,12 +115,11 @@ void farneback_periodic(struct image_t *img)
   };
 
 
-	//safe_time = ttc_calculator_func();
 
   //VERBOSE_PRINT("Safe_time: %f  threshold: %f state: %d \n", safe_time, safe_time_threshold, navigation_state);
-  printf("smooth ttc \t %f \n", safe_time);
+  printf("TURNING %d	\t \n", TURNING);
   // update our safe confidence using color thresholdF
-  if (TURNING){
+  if (TURNING == 1){
 	  safe_time = 5;
 	  printf("turning is true \n");
   }
@@ -130,35 +131,46 @@ void farneback_periodic(struct image_t *img)
   Bound(test_free_confidence, 0, max_trajectory_confidence);
 
   if (test_free_confidence ==0){
-	  printf("POLE DETECTED BITCHESS /n");
+	  printf("POLE DETECTED BITCHESS \n");
   }
-  printf("conf: %f \n",test_free_confidence);
+  //printf("conf: %f \n",test_free_confidence);
   //HIERONDER NIETS VERANDEREN
-  obstacle_free_confidence = 5;// test_free_confidence;
+  obstacle_free_confidence = test_free_confidence;
 
   // bound obstacle_free_confidence
   Bound(obstacle_free_confidence, 0, max_trajectory_confidence);
 
-  float moveDistance = fminf(maxDistance, 0.2f * obstacle_free_confidence);
-  moveDistance = maxDistance;
+  float moveDistance = fminf(maxDistance, 0.1f * obstacle_free_confidence);
+
 
   //navigation_state = SAFE;
 
   switch (navigation_state){
     case SAFE:
       // Move waypoint forward
-      TURNING = false;
-      moveWaypointForward(WP_TRAJECTORY, 1.5f * moveDistance);
-      if (!InsideObstacleZone(WaypointX(WP_TRAJECTORY),WaypointY(WP_TRAJECTORY))){
-        navigation_state = OUT_OF_BOUNDS;
-      } else if (obstacle_free_confidence == 0){
-        navigation_state = OBSTACLE_FOUND;
-      } else {
-        moveWaypointForward(WP_GOAL, moveDistance);
+        if (turn_counter >= 30){ //wait for the turning motion to be 100% done
+          TURNING = 0;
+          turn_counter =0;
+        }
+        else {
+      	  turn_counter++;
+        }
+
+      if (TURNING == 0){
+		  (WP_TRAJECTORY, 1.5f * moveDistance);
+		  if (!InsideObstacleZone(WaypointX(WP_TRAJECTORY),WaypointY(WP_TRAJECTORY))){
+			navigation_state = OUT_OF_BOUNDS;
+		  } else if (obstacle_free_confidence == 0){
+			navigation_state = OBSTACLE_FOUND;
+		  } else {
+			moveWaypointForward(WP_GOAL, moveDistance);
+		  }
       }
+
 
       break;
     case OBSTACLE_FOUND:
+    	printf("OBSTACLE FOUND TRUEE");
       // stop
       waypoint_set_here_2d(WP_GOAL);
       waypoint_set_here_2d(WP_TRAJECTORY);
@@ -167,7 +179,7 @@ void farneback_periodic(struct image_t *img)
       chooseRandomIncrementAvoidance();
 
       navigation_state = SEARCH_FOR_SAFE_HEADING;
-      TURNING = true;
+      TURNING = 1;
 
       break;
     case SEARCH_FOR_SAFE_HEADING:
@@ -175,8 +187,16 @@ void farneback_periodic(struct image_t *img)
 
       // make sure we have a couple of good readings before declaring the way safe
       //if (obstacle_free_confidence >= 2){
-        navigation_state = SAFE;
         obstacle_free_confidence = 5;
+        if (turn_counter >= 25){ //wait for the turning motion to be 100% done
+          navigation_state = SAFE;
+          turn_counter = 0;
+          printf("TESTHEADING");
+        } else {
+      	  turn_counter++;
+      	  printf("Counter %d \n", turn_counter);
+        }
+
       //}
       break;
     case OUT_OF_BOUNDS:
@@ -213,7 +233,7 @@ uint8_t increase_nav_heading(float incrementDegrees)
   // set heading
   nav_heading = ANGLE_BFP_OF_REAL(new_heading);
 
-  //VERBOSE_PRINT("Increasing heading to %f\n", DegOfRad(new_heading));
+  VERBOSE_PRINT("Increasing heading to %f\n", DegOfRad(new_heading));
   return false;
 }
 
@@ -263,10 +283,10 @@ uint8_t chooseRandomIncrementAvoidance(void)
 
   // Randomly choose CW or CCW avoiding direction
   if (rand() % 2 == 0) {
-    heading_increment = 45.f;
+    heading_increment = 2.f;
     //VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
   } else {
-    heading_increment = -45.f;
+    heading_increment = -2.f;
     //VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
   }
   printf("choose random increment gelukt \n");

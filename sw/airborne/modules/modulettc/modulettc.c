@@ -68,7 +68,7 @@ struct image_t *img;
 //Constants for the Exponential weighted moving average
 float history_ttc[size_smooth];
 float real_last_ttc;
-float degree_of_decrease = 0.8;
+float degree_of_decrease = 0.5;
 
 //Variables for data transfer between threads and modules
 float ttc_glob2;
@@ -126,7 +126,7 @@ struct image_t *calc_ttc(struct image_t *img)
     		}
     		history_ttc[0] = vid_ttc;
     	}
-    	printf("alpha = %f \n", degree_of_decrease);
+    	//printf("alpha = %f \n", degree_of_decrease);
     	float smooth_ttc = EWMA(&history_ttc,size_smooth,degree_of_decrease);
     	pthread_mutex_lock(&mutex);
     		ttc_glob2 = smooth_ttc;
