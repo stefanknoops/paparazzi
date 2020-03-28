@@ -81,9 +81,10 @@ struct image_t *opencv_func(struct image_t *img)
     float ttc = info.time_to_contact;
 
     ttc = abs(ttc)*1.0f/20.0f;
+    printf("%f \n", ttc);
 
     if (history_ttc[0] == 0.0f){
-    	if(ttc > 10){
+    	if(ttc > 5){
     		ttc = 5.0f;
     	}
     	for (int i=0 ; i< (size_smooth); i++){
@@ -93,10 +94,10 @@ struct image_t *opencv_func(struct image_t *img)
     else{
     	if(ttc > 5){
     		if (history_ttc[0] < 3){
-    			ttc = 3.0f;//history_ttc[0];
+    			ttc = history_ttc[0];
     		}
     		else{
-    			ttc = 5.0f;//history_ttc[0];
+    			ttc = history_ttc[0];
     		}
     	}
     	for (int i=size_smooth; i>1;i -=1){
@@ -105,7 +106,7 @@ struct image_t *opencv_func(struct image_t *img)
     	history_ttc[0] = ttc;
     }
     float smooth_ttc = EWMA(&history_ttc,size_smooth,0.6);
-    printf("%f \n", smooth_ttc);
+
 
   }
     // opencv_example(NULL, 10,10);

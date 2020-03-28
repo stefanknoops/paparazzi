@@ -53,9 +53,9 @@ enum navigation_state_t {
 float oa_color_count_frac = 0.18f;
 
 // define and initialise global variables
-enum navigation_state_t navigation_state = SEARCH_FOR_SAFE_HEADING;
+enum navigation_state_t navigation_state = SAFE;
 int32_t color_count = 0;               // orange color count from color filter for obstacle detection
-int16_t obstacle_free_confidence = 0;   // a measure of how certain we are that the way ahead is safe.
+int16_t obstacle_free_confidence = 5;   // a measure of how certain we are that the way ahead is safe.
 float heading_increment = 5.f;          // heading angle increment [deg]
 float maxDistance = 2.25;               // max waypoint displacement [m]
 
@@ -99,7 +99,7 @@ void orange_avoider_periodic(void)
   // compute current color thresholds
   int32_t color_count_threshold = oa_color_count_frac * front_camera.output_size.w * front_camera.output_size.h;
 
-  //VERBOSE_PRINT("Color_count: %d  threshold: %d state: %d \n", color_count, color_count, navigation_state);
+  VERBOSE_PRINT("Color_count: %d  threshold: %d state: %d \n", color_count, color_count, navigation_state);
 
   // update our safe confidence using color threshold
   if(color_count < color_count_threshold){
