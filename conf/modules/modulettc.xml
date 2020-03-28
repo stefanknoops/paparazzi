@@ -4,6 +4,25 @@
   <doc>
     <description>Calculates the time to contact from farneback optical flow vectors</description>
   </doc>
+
+  <settings>
+    <dl_settings>
+      <dl_settings name="LinearFlowFit">
+         <dl_setting var="n_iterations" min="1" step="1" max="255" shortname="n_itts"/>
+	 <dl_setting var="error_threshold" min="1" step="1" max="50" shortname="err_th"/>
+	 <dl_setting var="n_samples" min="3" step="1" max="1000" shortname="n_samp"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+
+  <settings>
+    <dl_settings>
+      <dl_settings name="SmoothingFunction">
+         <dl_setting var="degree_of_decrease" min="0" step="0.05" max="1" shortname="alpha"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+
   <header>
     <file name="modulettc.h"/>
   </header>

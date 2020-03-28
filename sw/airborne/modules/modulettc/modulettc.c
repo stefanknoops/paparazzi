@@ -126,7 +126,7 @@ struct image_t *calc_ttc(struct image_t *img)
     		}
     		history_ttc[0] = vid_ttc;
     	}
-
+    	printf("alpha = %f \n", degree_of_decrease);
     	float smooth_ttc = EWMA(&history_ttc,size_smooth,degree_of_decrease);
     	pthread_mutex_lock(&mutex);
     		ttc_glob2 = smooth_ttc;

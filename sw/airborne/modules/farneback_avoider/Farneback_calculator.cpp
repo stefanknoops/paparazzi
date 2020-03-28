@@ -50,7 +50,7 @@ struct flow_t* farneback_flow(char *img, int width, int height)
 
 	 int k = 0;
 	 int z = 0;
-	 int vector_count = 1;
+	 int vector_count = 0;
 	 int subpixel_factor = 1;
 	 for (int i=0 ; i< (uflow.rows); i +=3){
 		 for(int j = 0; j < (uflow.cols) ;j += 3){
