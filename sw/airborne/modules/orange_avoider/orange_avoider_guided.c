@@ -1,4 +1,4 @@
-/*
+x`/*
  * Copyright (C) Kirk Scheper <kirkscheper@gmail.com>
  *
  * This file is part of paparazzi
@@ -127,9 +127,9 @@ void orange_avoider_guided_periodic(void)
   int32_t floor_count_threshold = oag_floor_count_frac * front_camera.output_size.w * front_camera.output_size.h;
   float floor_centroid_frac = floor_centroid / (float)front_camera.output_size.h / 2.f;
 
-  VERBOSE_PRINT("Color_count: %d  threshold: %d state: %d \n", color_count, color_count_threshold, navigation_state);
-  VERBOSE_PRINT("Floor count: %d, threshold: %d\n", floor_count, floor_count_threshold);
-  VERBOSE_PRINT("Floor centroid: %f\n", floor_centroid_frac);
+  //VERBOSE_PRINT("Color_count: %d  threshold: %d state: %d \n", color_count, color_count_threshold, navigation_state);
+  //VERBOSE_PRINT("Floor count: %d, threshold: %d\n", floor_count, floor_count_threshold);
+  //VERBOSE_PRINT("Floor centroid: %f\n", floor_centroid_frac);
 
   // update our safe confidence using color threshold
   if(color_count < color_count_threshold){
@@ -137,11 +137,13 @@ void orange_avoider_guided_periodic(void)
   } else {
     obstacle_free_confidence -= 2;  // be more cautious with positive obstacle detections
   }
+  obstacle_free_confidence = 5;
 
   // bound obstacle_free_confidence
   Bound(obstacle_free_confidence, 0, max_trajectory_confidence);
 
   float speed_sp = fminf(oag_max_speed, 0.2f * obstacle_free_confidence);
+  float speed_sp = 1.0f;
 
   switch (navigation_state){
     case SAFE:
@@ -210,10 +212,10 @@ uint8_t chooseRandomIncrementAvoidance(void)
   // Randomly choose CW or CCW avoiding direction
   if (rand() % 2 == 0) {
     avoidance_heading_direction = 1.f;
-    VERBOSE_PRINT("Set avoidance increment to: %f\n", avoidance_heading_direction * oag_heading_rate);
+    //VERBOSE_PRINT("Set avoidance increment to: %f\n", avoidance_heading_direction * oag_heading_rate);
   } else {
     avoidance_heading_direction = -1.f;
-    VERBOSE_PRINT("Set avoidance increment to: %f\n", avoidance_heading_direction * oag_heading_rate);
+    //VERBOSE_PRINT("Set avoidance increment to: %f\n", avoidance_heading_direction * oag_heading_rate);
   }
   return false;
 }

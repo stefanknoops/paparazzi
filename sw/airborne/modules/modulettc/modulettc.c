@@ -49,7 +49,7 @@
 #endif
 
 #ifndef size_smooth
-#define size_smooth 6
+#define size_smooth 4
 #endif
 
 //begin mutex
@@ -133,6 +133,7 @@ struct image_t *calc_ttc(struct image_t *img)
     		ttc_glob2 = smooth_ttc;
     	pthread_mutex_unlock(&mutex);
     	ttc_updated = true;
+    	//printf("smooth ttc %f \n", smooth_ttc);
   }
   return img;
 }

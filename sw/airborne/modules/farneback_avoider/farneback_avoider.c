@@ -55,14 +55,16 @@ enum navigation_state_t {
   OUT_OF_BOUNDS
 };
 // define and initialize global variables
-enum navigation_state_t navigation_state = SEARCH_FOR_SAFE_HEADING;
+enum navigation_state_t navigation_state = SAFE;
 int16_t obstacle_free_confidence = 0;   // a measure of how certain we are that the way ahead is safe.
 float heading_increment = 5.f;          // heading angle increment [deg]
 float maxDistance = 2.25;               // max waypoint displacement [m]
 //float ttc = 0;
 float ttc_temp = 0;
 float safe_time = 0;
-float safe_time_threshold = 2;
+float safe_time_threshold = 3.3;
+float test_free_confidence = 5.0;
+bool TURNING;
 
 const int16_t max_trajectory_confidence = 5; // number of consecutive negative object detections to be sure we are obstacle free
 
@@ -84,7 +86,6 @@ static abi_event farneback_detection_ev;
 static void farneback_detection_cb(int __attribute__((unused)) senderid, float ttc) //HIER DE TTC AANPASSEN (opencvexample)
 		{
 		  safe_time = ttc;
-		  printf("DATA RECEIVED: %f \n", safe_time);
 		  //printf("safe_time NA OVERSCHRIJVEN SAFE TIME= %f \n",safe_time);
 		  //printf("ttc NA OVERSCHRIJVEN SAFE TIME= %f \n",ttc);
 
@@ -107,14 +108,14 @@ void farneback_periodic(struct image_t *img)
 	  //printf("farneback periodic begin \n");
 
 	// only evaluate our state machine if we are flying
-	//if(!autopilot_in_flight()){
-	//	return;
-	//};
+	if(!autopilot_in_flight()){
+    return;
+  };
 
 
 	//safe_time = ttc_calculator_func();
 
-  //VERBOSE_PRINT("Safe_time: %f  threshold: %f state: %d \n", safe_time, safe_time_threshold, navigation_state);
+  VERBOSE_PRINT("Safe_time: %f  threshold: %f state: %d \n", safe_time, safe_time_threshold, navigation_state);
 
   // update our safe confidence using color threshold
   if(safe_time > safe_time_threshold){
@@ -122,8 +123,7 @@ void farneback_periodic(struct image_t *img)
   } else {
     obstacle_free_confidence -= 3;  // be more cautious with positive obstacle detections
   }
-  printf("safetime being used \n");
-  //printf("conf: %d \n",obstacle_free_confidence);
+  printf("conf: %d \n",obstacle_free_confidence);
   //HIERONDER NIETS VERANDEREN
 
   // bound obstacle_free_confidence
