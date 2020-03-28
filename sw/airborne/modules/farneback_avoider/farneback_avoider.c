@@ -55,14 +55,16 @@ enum navigation_state_t {
   OUT_OF_BOUNDS
 };
 // define and initialize global variables
-enum navigation_state_t navigation_state = SEARCH_FOR_SAFE_HEADING;
+enum navigation_state_t navigation_state = SAFE;
 int16_t obstacle_free_confidence = 0;   // a measure of how certain we are that the way ahead is safe.
 float heading_increment = 5.f;          // heading angle increment [deg]
 float maxDistance = 2.25;               // max waypoint displacement [m]
 //float ttc = 0;
 float ttc_temp = 0;
 float safe_time = 0;
-float safe_time_threshold = 2;
+float safe_time_threshold = 3.3;
+float test_free_confidence = 5.0;
+bool TURNING;
 
 const int16_t max_trajectory_confidence = 5; // number of consecutive negative object detections to be sure we are obstacle free
 
@@ -113,25 +115,38 @@ void farneback_periodic(struct image_t *img)
 
 	//safe_time = ttc_calculator_func();
 
-  VERBOSE_PRINT("Safe_time: %f  threshold: %f state: %d \n", safe_time, safe_time_threshold, navigation_state);
-
-  // update our safe confidence using color threshold
-  if(safe_time > safe_time_threshold){
-    obstacle_free_confidence++;
-  } else {
-    obstacle_free_confidence -= 3;  // be more cautious with positive obstacle detections
+  //VERBOSE_PRINT("Safe_time: %f  threshold: %f state: %d \n", safe_time, safe_time_threshold, navigation_state);
+  printf("smooth ttc \t %f \n", safe_time);
+  // update our safe confidence using color thresholdF
+  if (TURNING){
+	  safe_time = 5;
   }
-  printf("conf: %d \n",obstacle_free_confidence);
+  if(safe_time > safe_time_threshold){
+    test_free_confidence++;
+  } else {
+    test_free_confidence -= 2;  // be more cautious with positive obstacle detections
+  }
+  Bound(test_free_confidence, 0, max_trajectory_confidence);
+
+  if (test_free_confidence ==0){
+	  printf("POLE DETECTED BITCHESS /n");
+  }
+  printf("conf: %f \n",test_free_confidence);
   //HIERONDER NIETS VERANDEREN
+  obstacle_free_confidence = 5;// test_free_confidence;
 
   // bound obstacle_free_confidence
   Bound(obstacle_free_confidence, 0, max_trajectory_confidence);
 
   float moveDistance = fminf(maxDistance, 0.2f * obstacle_free_confidence);
+  moveDistance = maxDistance;
+
+  navigation_state = SAFE;
 
   switch (navigation_state){
     case SAFE:
       // Move waypoint forward
+      TURNING = false;
       moveWaypointForward(WP_TRAJECTORY, 1.5f * moveDistance);
       if (!InsideObstacleZone(WaypointX(WP_TRAJECTORY),WaypointY(WP_TRAJECTORY))){
         navigation_state = OUT_OF_BOUNDS;
@@ -151,6 +166,7 @@ void farneback_periodic(struct image_t *img)
       chooseRandomIncrementAvoidance();
 
       navigation_state = SEARCH_FOR_SAFE_HEADING;
+      TURNING = true;
 
       break;
     case SEARCH_FOR_SAFE_HEADING:
@@ -196,7 +212,7 @@ uint8_t increase_nav_heading(float incrementDegrees)
   // set heading
   nav_heading = ANGLE_BFP_OF_REAL(new_heading);
 
-  VERBOSE_PRINT("Increasing heading to %f\n", DegOfRad(new_heading));
+  //VERBOSE_PRINT("Increasing heading to %f\n", DegOfRad(new_heading));
   return false;
 }
 
@@ -210,9 +226,9 @@ static uint8_t calculateForwards(struct EnuCoor_i *new_coor, float distanceMeter
   // Now determine where to place the waypoint you want to go to
   new_coor->x = stateGetPositionEnu_i()->x + POS_BFP_OF_REAL(sinf(heading) * (distanceMeters));
   new_coor->y = stateGetPositionEnu_i()->y + POS_BFP_OF_REAL(cosf(heading) * (distanceMeters));
-  VERBOSE_PRINT("Calculated %f m forward position. x: %f  y: %f based on pos(%f, %f) and heading(%f)\n", distanceMeters,
-                POS_FLOAT_OF_BFP(new_coor->x), POS_FLOAT_OF_BFP(new_coor->y),
-                stateGetPositionEnu_f()->x, stateGetPositionEnu_f()->y, DegOfRad(heading));
+  //VERBOSE_PRINT("Calculated %f m forward position. x: %f  y: %f based on pos(%f, %f) and heading(%f)\n", distanceMeters,
+               // POS_FLOAT_OF_BFP(new_coor->x), POS_FLOAT_OF_BFP(new_coor->y),
+               // stateGetPositionEnu_f()->x, stateGetPositionEnu_f()->y, DegOfRad(heading));
   return false;
 }
 
@@ -221,8 +237,8 @@ static uint8_t calculateForwards(struct EnuCoor_i *new_coor, float distanceMeter
  */
 uint8_t moveWaypoint(uint8_t waypoint, struct EnuCoor_i *new_coor)
 {
-  VERBOSE_PRINT("Moving waypoint %d to x:%f y:%f\n", waypoint, POS_FLOAT_OF_BFP(new_coor->x),
-                POS_FLOAT_OF_BFP(new_coor->y));
+  //VERBOSE_PRINT("Moving waypoint %d to x:%f y:%f\n", waypoint, POS_FLOAT_OF_BFP(new_coor->x),
+                //POS_FLOAT_OF_BFP(new_coor->y));
   waypoint_set_xy_i(waypoint, new_coor->x, new_coor->y);
   return false;
 }
@@ -247,10 +263,10 @@ uint8_t chooseRandomIncrementAvoidance(void)
   // Randomly choose CW or CCW avoiding direction
   if (rand() % 2 == 0) {
     heading_increment = 45.f;
-    VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
+    //VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
   } else {
     heading_increment = -45.f;
-    VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
+    //VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
   }
   printf("choose random increment gelukt \n");
 
