@@ -62,7 +62,7 @@ float maxDistance = 2.25;               // max waypoint displacement [m]
 //float ttc = 0;
 float ttc_temp = 0;
 float safe_time = 0;
-float safe_time_threshold = 0;
+float safe_time_threshold = 2;
 
 const int16_t max_trajectory_confidence = 5; // number of consecutive negative object detections to be sure we are obstacle free
 
@@ -110,17 +110,18 @@ void farneback_periodic(struct image_t *img)
     return;
   };
 
+
 	//safe_time = ttc_calculator_func();
 
-  VERBOSE_PRINT("Color_count: %f  threshold: %f state: %d \n", safe_time, safe_time_threshold, navigation_state);
+  VERBOSE_PRINT("Safe_time: %f  threshold: %f state: %d \n", safe_time, safe_time_threshold, navigation_state);
 
   // update our safe confidence using color threshold
   if(safe_time > safe_time_threshold){
     obstacle_free_confidence++;
   } else {
-    obstacle_free_confidence -= 2;  // be more cautious with positive obstacle detections
+    obstacle_free_confidence -= 3;  // be more cautious with positive obstacle detections
   }
-
+  printf("conf: %d \n",obstacle_free_confidence);
   //HIERONDER NIETS VERANDEREN
 
   // bound obstacle_free_confidence
@@ -156,9 +157,10 @@ void farneback_periodic(struct image_t *img)
       increase_nav_heading(heading_increment);
 
       // make sure we have a couple of good readings before declaring the way safe
-      if (obstacle_free_confidence >= 2){
+      //if (obstacle_free_confidence >= 2){
         navigation_state = SAFE;
-      }
+        obstacle_free_confidence = 5;
+      //}
       break;
     case OUT_OF_BOUNDS:
       increase_nav_heading(heading_increment);
@@ -244,10 +246,10 @@ uint8_t chooseRandomIncrementAvoidance(void)
 
   // Randomly choose CW or CCW avoiding direction
   if (rand() % 2 == 0) {
-    heading_increment = 5.f;
+    heading_increment = 45.f;
     VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
   } else {
-    heading_increment = -5.f;
+    heading_increment = -45.f;
     VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
   }
   printf("choose random increment gelukt \n");

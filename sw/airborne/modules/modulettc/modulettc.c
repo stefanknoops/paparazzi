@@ -68,7 +68,7 @@ struct image_t *img;
 //Constants for the Exponential weighted moving average
 float history_ttc[size_smooth];
 float real_last_ttc;
-float degree_of_decrease = 0.5;
+float degree_of_decrease = 0.8;
 
 //Variables for data transfer between threads and modules
 float ttc_glob2;
