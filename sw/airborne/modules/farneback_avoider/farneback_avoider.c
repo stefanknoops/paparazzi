@@ -86,6 +86,7 @@ static abi_event farneback_detection_ev;
 static void farneback_detection_cb(int __attribute__((unused)) senderid, float ttc) //HIER DE TTC AANPASSEN (opencvexample)
 		{
 		  safe_time = ttc;
+		  printf("Message received \n");
 		  //printf("safe_time NA OVERSCHRIJVEN SAFE TIME= %f \n",safe_time);
 		  //printf("ttc NA OVERSCHRIJVEN SAFE TIME= %f \n",ttc);
 
