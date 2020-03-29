@@ -101,7 +101,6 @@ struct image_t *calc_ttc(struct image_t *img)
     	float vid_ttc = abs(info.time_to_contact)*(1.0f/TTC_FPS);
 
     	real_last_ttc = vid_ttc;
-    	printf("real_last_ttc \t %f \n",real_last_ttc);
 
     	//loop for filling the history of ttc, and find error data
     	if (history_ttc[0] == 0.0f){

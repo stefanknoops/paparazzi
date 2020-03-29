@@ -32,6 +32,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <math.h>
 #include "TTC_calculator.h"
 #include "modules/computer_vision/lib/vision/image.h"
 //#include "modules/farneback_avoider/Farneback_calculator.h"
@@ -67,7 +68,9 @@ float safe_time_threshold = 4.9;
 int test_free_confidence = 5;
 int TURNING = 0;
 int turn_counter = 0;
-float desired_new_heading = 0;
+int turnsize = 0;
+float desired_heading = 0;
+float error_in_heading;
 float noise_level = 5.0f;
 
 const int16_t max_trajectory_confidence = 5; // number of consecutive negative object detections to be sure we are obstacle free
@@ -90,10 +93,6 @@ static abi_event farneback_detection_ev;
 static void farneback_detection_cb(int __attribute__((unused)) senderid, float ttc) //HIER DE TTC AANPASSEN (opencvexample)
 		{
 		  safe_time = ttc;
-		  //printf("safe_time NA OVERSCHRIJVEN SAFE TIME= %f \n",safe_time);
-		  //printf("ttc NA OVERSCHRIJVEN SAFE TIME= %f \n",ttc);
-
-
 		}
 
 void farneback_init(void) {
@@ -109,8 +108,6 @@ void farneback_init(void) {
 
 void farneback_periodic(struct image_t *img)
 {
-	  //printf("farneback periodic begin \n");
-
 	// only evaluate our state machine if we are flying
 	if(!autopilot_in_flight()){
     return;
@@ -119,12 +116,12 @@ void farneback_periodic(struct image_t *img)
 
 
   VERBOSE_PRINT("Safe_time: %f  threshold: %f state: %d \n", safe_time, safe_time_threshold, navigation_state);
-  //printf("TURNING %d	\t \n", TURNING);
+
   // update our safe confidence using color thresholdF
   if (TURNING == 1){
 	  safe_time = noise_level;
-	  printf("turning is true \n");
   }
+
   if(safe_time > safe_time_threshold){
     test_free_confidence++;
   } else {
@@ -133,12 +130,11 @@ void farneback_periodic(struct image_t *img)
   Bound(test_free_confidence, 0, max_trajectory_confidence);
 
   if (test_free_confidence ==0){
-	  printf("POLE DETECTED BITCHESS \n");
+	  printf("POLE DETECTED\n");
   }
 
   obstacle_free_confidence = test_free_confidence;
   // bound obstacle_free_confidence
-  Bound(obstacle_free_confidence, 0, max_trajectory_confidence);
 
   float moveDistance = fminf(maxDistance, 0.10f * obstacle_free_confidence);
 
@@ -146,8 +142,9 @@ void farneback_periodic(struct image_t *img)
   switch (navigation_state){
     case SAFE:
 
-    	// Move waypoint forward
+    	// check if drone is turning
     	if (TURNING ==1 ){
+    		 // Wait after turning to reduce oscillations drone
     		 if (turn_counter >= 45){ //wait for the turning motion to be 100% done
     			 TURNING = 0;
     		     turn_counter = 0;
@@ -156,20 +153,24 @@ void farneback_periodic(struct image_t *img)
     		     turn_counter++;
     		 }
     	}
+    	// If not turning, move waypoint forward
     	else if(TURNING ==0){
     	moveWaypointForward(WP_TRAJECTORY, 1.5f * moveDistance);
-		if (!InsideObstacleZone(WaypointX(WP_TRAJECTORY),WaypointY(WP_TRAJECTORY))){
-	      navigation_state = OUT_OF_BOUNDS;
-		} else if (obstacle_free_confidence == 0){
-		  navigation_state = OBSTACLE_FOUND;
-		} else {
-		  moveWaypointForward(WP_GOAL, moveDistance);
+			if (!InsideObstacleZone(WaypointX(WP_TRAJECTORY),WaypointY(WP_TRAJECTORY))){
+				navigation_state = OUT_OF_BOUNDS;
+			}
+			else if (obstacle_free_confidence == 0){
+				navigation_state = OBSTACLE_FOUND;
+			}
+			else {
+				moveWaypointForward(WP_GOAL, moveDistance);
 			}
     	}
 
       break;
     case OBSTACLE_FOUND:
-    	printf("OBSTACLE FOUND TRUEE");
+    	printf("OBSTACLE FOUND TRUE");
+
       // stop
       waypoint_set_here_2d(WP_GOAL);
       waypoint_set_here_2d(WP_TRAJECTORY);
@@ -179,53 +180,48 @@ void farneback_periodic(struct image_t *img)
       chooseRandomIncrementAvoidance();
 
       navigation_state = SEARCH_FOR_SAFE_HEADING;
-      TURNING = 1;
-      desired_new_heading = 0;
 
+      // turnsize 18 means: 18*5 = 90 degrees turn
+      turnsize = 19;
 
       break;
     case SEARCH_FOR_SAFE_HEADING:
-      increase_nav_heading(heading_increment);
 
-      obstacle_free_confidence = 5;
+    	// already turning?
+		if (TURNING == 0) {
+			increase_nav_heading(turnsize*heading_increment);
+			TURNING = 1;
+			printf("Started turning");
+		}
+		// check if desired turn angle achieved
+		else if (error_in_heading < 2.0f){
+			navigation_state = SAFE;
+			test_free_confidence = 5;
+			printf("Stopped turning");
 
-      // make sure we have a couple of good readings before declaring the way safe
-       if (turn_counter >= 30){ //wait for the turning motion to be 100% done
-          navigation_state = SAFE;
-          printf("CHECKLOOP \n");
-          turn_counter = 0;
-          //printf("TESTHEADING");
-          desired_new_heading = 0;
-        }
-        else {
-      	  turn_counter++;
-      	  //printf("Counter %d \n", turn_counter);
-        }
+		}
 
-      //}
-      break;
+		// error between desired heading and current heading
+		float temp_error_in_heading = DegOfRad(desired_heading - stateGetNedToBodyEulers_f()->psi);
+		error_in_heading = abs(fmod(temp_error_in_heading + 180.0f, 360.0f) -180.0f);
+
+		break;
     case OUT_OF_BOUNDS:
      //stop
       waypoint_set_here_2d(WP_GOAL);
       waypoint_set_here_2d(WP_TRAJECTORY);
 
-      //turn
-      TURNING = 1;
-
-      increase_nav_heading(heading_increment);
       moveWaypointForward(WP_TRAJECTORY, 0.5f);
 
-      if (InsideObstacleZone(WaypointX(WP_TRAJECTORY),WaypointY(WP_TRAJECTORY))){
-        // add offset to head back into arena
-        increase_nav_heading(heading_increment);
-        desired_new_heading = 0;
+      // reset safe counter
+      obstacle_free_confidence = 0;
 
-        // reset safe counter
-        obstacle_free_confidence = 0;
+      // ensure direction is safe before continuing
+      navigation_state = SEARCH_FOR_SAFE_HEADING;
 
-        // ensure direction is safe before continuing
-        navigation_state = SEARCH_FOR_SAFE_HEADING;
-      }
+      // define turnsize: 26 * 5 = 130 degrees
+      turnsize = 26;
+      //}
       break;
     default:
       break;
@@ -238,23 +234,15 @@ void farneback_periodic(struct image_t *img)
  */
 uint8_t increase_nav_heading(float incrementDegrees)
 {
-
-   if ((desired_new_heading - 0) < 0.01){
-	  desired_new_heading =  stateGetNedToBodyEulers_f()->psi + RadOfDeg(incrementDegrees);
-    }
-   else{
-	  desired_new_heading = desired_new_heading + RadOfDeg(incrementDegrees);
-   }
-
-   float new_heading = desired_new_heading;
+   desired_heading = stateGetNedToBodyEulers_f()->psi + RadOfDeg(incrementDegrees);
 
   // normalize heading to [-pi, pi]
-  FLOAT_ANGLE_NORMALIZE(new_heading);
+  FLOAT_ANGLE_NORMALIZE(desired_heading);
 
   // set heading
-  nav_heading = ANGLE_BFP_OF_REAL(new_heading);
+  nav_heading = ANGLE_BFP_OF_REAL(desired_heading);
 
-  VERBOSE_PRINT("Increasing heading to %f\n", DegOfRad(new_heading));
+  VERBOSE_PRINT("Increasing heading to %f\n", DegOfRad(desired_heading));
   return false;
 }
 
@@ -305,10 +293,10 @@ uint8_t chooseRandomIncrementAvoidance(void)
 
   // Randomly choose CW or CCW avoiding direction
   if (rand() % 2 == 0) {
-    heading_increment = 3.f;
+    heading_increment = 5.f;
     //VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
   } else {
-    heading_increment = 3.f;
+    heading_increment = 5.f;
     //VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
   }
   printf("choose random increment gelukt \n");
