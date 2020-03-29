@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Max_Stefan
+ * Copyright (C) Daan,Max, Mitchell, Ruben, Stefan
  *
  * This file is part of paparazzi
  *
@@ -64,7 +64,7 @@ float maxDistance = 2.25;               // max waypoint displacement [m]
 //float ttc = 0;
 float ttc_temp = 0;
 float safe_time = 0;
-float safe_time_threshold = 4.9;
+float safe_time_threshold = 4.95;
 int test_free_confidence = 5;
 int TURNING = 0;
 int turn_counter = 0;

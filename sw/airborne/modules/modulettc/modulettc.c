@@ -65,7 +65,7 @@ int n_samples = 50;
 //Image structure
 struct image_t *img;
 
-//Constants for the Exponential weighted moving average
+//Constants for the Exponential weighted moving average (EWMA)
 float history_ttc[size_smooth];
 float real_last_ttc;
 float degree_of_decrease = 0.5;
@@ -92,16 +92,24 @@ struct image_t *calc_ttc(struct image_t *img)
 {
   if (img->type == IMAGE_YUV422) {
    	// Call OpenCV (C++ from paparazzi C function)
-    	struct flow_t *vector_ptr = farneback_flow((char *) img->buf, img->w, img->h); //deze functie moet vervangen worden door de uiteindelijk
-    	int count = 60 * 60 / 9.0f;
+    	struct flow_t *vector_ptr = farneback_flow((char *) img->buf, img->w, img->h);
+
+    	// set parameters for linear flow fit
+    	int count = 60 * 75 / 9.0f; //number of flow vectors
     	int im_width = 60;
-    	int im_height = 60;
-    	struct linear_flow_fit_info info;
+    	int im_height = 75;
+    	struct linear_flow_fit_info info; //output structure with info
+
+    	//linearize flow field
     	bool test = analyze_linear_flow_field(vector_ptr, count, error_threshold, n_iterations, n_samples, im_width, im_height, &info);
+
+    	//extract ttc
     	float vid_ttc = abs(info.time_to_contact)*(1.0f/TTC_FPS);
 
+    	//save unfiltered last ttc
     	real_last_ttc = vid_ttc;
 
+    	//FILTER STARST HERE
     	//loop for filling the history of ttc, and find error data
     	if (history_ttc[0] == 0.0f){
     		if(vid_ttc > 5){
@@ -126,13 +134,15 @@ struct image_t *calc_ttc(struct image_t *img)
     		}
     		history_ttc[0] = vid_ttc;
     	}
-    	//printf("alpha = %f \n", degree_of_decrease);
+
+    	//apply EWMA over last four points
     	float smooth_ttc = EWMA(&history_ttc,size_smooth,degree_of_decrease);
+    	//FILTER ENDS HERE
+
     	pthread_mutex_lock(&mutex);
     		ttc_glob2 = smooth_ttc;
     	pthread_mutex_unlock(&mutex);
     	ttc_updated = true;
-    	//printf("smooth ttc %f \n", smooth_ttc);
   }
   return img;
 }
