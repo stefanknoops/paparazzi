@@ -67,6 +67,7 @@ float safe_time_threshold = 3.3;
 int test_free_confidence = 5;
 int TURNING = 0;
 int turn_counter = 0;
+float desired_new_heading = 0;
 
 const int16_t max_trajectory_confidence = 5; // number of consecutive negative object detections to be sure we are obstacle free
 
@@ -116,8 +117,8 @@ void farneback_periodic(struct image_t *img)
 
 
 
-  //VERBOSE_PRINT("Safe_time: %f  threshold: %f state: %d \n", safe_time, safe_time_threshold, navigation_state);
-  printf("TURNING %d	\t \n", TURNING);
+  VERBOSE_PRINT("Safe_time: %f  threshold: %f state: %d \n", safe_time, safe_time_threshold, navigation_state);
+  //printf("TURNING %d	\t \n", TURNING);
   // update our safe confidence using color thresholdF
   if (TURNING == 1){
 	  safe_time = 5;
@@ -140,33 +141,32 @@ void farneback_periodic(struct image_t *img)
   // bound obstacle_free_confidence
   Bound(obstacle_free_confidence, 0, max_trajectory_confidence);
 
-  float moveDistance = fminf(maxDistance, 0.1f * obstacle_free_confidence);
+  float moveDistance = fminf(maxDistance, 0.2f * obstacle_free_confidence);
 
-
-  //navigation_state = SAFE;
 
   switch (navigation_state){
     case SAFE:
-      // Move waypoint forward
-        if (turn_counter >= 30){ //wait for the turning motion to be 100% done
-          TURNING = 0;
-          turn_counter =0;
-        }
-        else {
-      	  turn_counter++;
-        }
 
-      if (TURNING == 0){
-		  (WP_TRAJECTORY, 1.5f * moveDistance);
-		  if (!InsideObstacleZone(WaypointX(WP_TRAJECTORY),WaypointY(WP_TRAJECTORY))){
-			navigation_state = OUT_OF_BOUNDS;
-		  } else if (obstacle_free_confidence == 0){
-			navigation_state = OBSTACLE_FOUND;
-		  } else {
-			moveWaypointForward(WP_GOAL, moveDistance);
-		  }
-      }
-
+    	// Move waypoint forward
+    	if (TURNING ==1 ){
+    		 if (turn_counter >= 20){ //wait for the turning motion to be 100% done
+    			 TURNING = 0;
+    		     turn_counter = 0;
+    		 }
+    		 else {
+    		     turn_counter++;
+    		 }
+    	}
+    	else if(TURNING ==0){
+    		moveWaypointForward(WP_TRAJECTORY, 1.5f * moveDistance);
+		if (!InsideObstacleZone(WaypointX(WP_TRAJECTORY),WaypointY(WP_TRAJECTORY))){
+	      navigation_state = OUT_OF_BOUNDS;
+		} else if (obstacle_free_confidence == 0){
+		  navigation_state = OBSTACLE_FOUND;
+		} else {
+		  moveWaypointForward(WP_GOAL, moveDistance);
+			}
+    	}
 
       break;
     case OBSTACLE_FOUND:
@@ -181,31 +181,42 @@ void farneback_periodic(struct image_t *img)
       navigation_state = SEARCH_FOR_SAFE_HEADING;
       TURNING = 1;
 
+
       break;
     case SEARCH_FOR_SAFE_HEADING:
       increase_nav_heading(heading_increment);
 
+      obstacle_free_confidence = 5;
+
       // make sure we have a couple of good readings before declaring the way safe
-      //if (obstacle_free_confidence >= 2){
-        obstacle_free_confidence = 5;
-        if (turn_counter >= 25){ //wait for the turning motion to be 100% done
+       if (turn_counter >= 44){ //wait for the turning motion to be 100% done
           navigation_state = SAFE;
           turn_counter = 0;
-          printf("TESTHEADING");
-        } else {
+          //printf("TESTHEADING");
+          desired_new_heading = 0;
+        }
+        else {
       	  turn_counter++;
-      	  printf("Counter %d \n", turn_counter);
+      	  //printf("Counter %d \n", turn_counter);
         }
 
       //}
       break;
     case OUT_OF_BOUNDS:
+     //stop
+      waypoint_set_here_2d(WP_GOAL);
+      waypoint_set_here_2d(WP_TRAJECTORY);
+
+      //turn
+      TURNING = 1;
       increase_nav_heading(heading_increment);
-      moveWaypointForward(WP_TRAJECTORY, 1.5f);
+      moveWaypointForward(WP_TRAJECTORY, 0.5f);
+      //desired_new_heading = 0;
 
       if (InsideObstacleZone(WaypointX(WP_TRAJECTORY),WaypointY(WP_TRAJECTORY))){
         // add offset to head back into arena
         increase_nav_heading(heading_increment);
+        desired_new_heading = 0;
 
         // reset safe counter
         obstacle_free_confidence = 0;
@@ -225,7 +236,15 @@ void farneback_periodic(struct image_t *img)
  */
 uint8_t increase_nav_heading(float incrementDegrees)
 {
-  float new_heading = stateGetNedToBodyEulers_f()->psi + RadOfDeg(incrementDegrees);
+
+   if ((desired_new_heading - 0) < 0.01){
+	  desired_new_heading =  stateGetNedToBodyEulers_f()->psi + RadOfDeg(incrementDegrees);
+    }
+   else{
+	  desired_new_heading = desired_new_heading + RadOfDeg(incrementDegrees);
+   }
+
+   float new_heading = desired_new_heading;
 
   // normalize heading to [-pi, pi]
   FLOAT_ANGLE_NORMALIZE(new_heading);
@@ -242,6 +261,7 @@ uint8_t increase_nav_heading(float incrementDegrees)
  */
 static uint8_t calculateForwards(struct EnuCoor_i *new_coor, float distanceMeters)
 {
+
   float heading  = stateGetNedToBodyEulers_f()->psi;
 
   // Now determine where to place the waypoint you want to go to
@@ -286,7 +306,7 @@ uint8_t chooseRandomIncrementAvoidance(void)
     heading_increment = 2.f;
     //VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
   } else {
-    heading_increment = -2.f;
+    heading_increment = 2.f;
     //VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
   }
   printf("choose random increment gelukt \n");
