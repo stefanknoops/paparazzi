@@ -45,7 +45,7 @@
 #endif
 
 #ifndef TTC_FPS
-#define TTC_FPS 20 ///< Default FPS (zero means run at camera fps)
+#define TTC_FPS 16 ///< Default FPS (zero means run at camera fps)
 #endif
 
 #ifndef size_smooth

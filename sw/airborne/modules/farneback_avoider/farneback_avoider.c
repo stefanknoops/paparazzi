@@ -63,7 +63,7 @@ float maxDistance = 2.25;               // max waypoint displacement [m]
 //float ttc = 0;
 float ttc_temp = 0;
 float safe_time = 0;
-float safe_time_threshold = 3.3;
+float safe_time_threshold = 4.5;
 int test_free_confidence = 5;
 int TURNING = 0;
 int turn_counter = 0;
@@ -174,6 +174,7 @@ void farneback_periodic(struct image_t *img)
       // stop
       waypoint_set_here_2d(WP_GOAL);
       waypoint_set_here_2d(WP_TRAJECTORY);
+      moveWaypointForward(WP_TRAJECTORY, -2.5f);
 
       // randomly select new search direction
       chooseRandomIncrementAvoidance();
@@ -189,7 +190,7 @@ void farneback_periodic(struct image_t *img)
       obstacle_free_confidence = 5;
 
       // make sure we have a couple of good readings before declaring the way safe
-       if (turn_counter >= 44){ //wait for the turning motion to be 100% done
+       if (turn_counter >= 30){ //wait for the turning motion to be 100% done
           navigation_state = SAFE;
           turn_counter = 0;
           //printf("TESTHEADING");
@@ -223,6 +224,7 @@ void farneback_periodic(struct image_t *img)
 
         // ensure direction is safe before continuing
         navigation_state = SEARCH_FOR_SAFE_HEADING;
+        //navigation_state = SAFE;
       }
       break;
     default:
@@ -303,10 +305,10 @@ uint8_t chooseRandomIncrementAvoidance(void)
 
   // Randomly choose CW or CCW avoiding direction
   if (rand() % 2 == 0) {
-    heading_increment = 2.f;
+    heading_increment = 3.f;
     //VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
   } else {
-    heading_increment = 2.f;
+    heading_increment = 3.f;
     //VERBOSE_PRINT("Set avoidance increment to: %f\n", heading_increment);
   }
   printf("choose random increment gelukt \n");
