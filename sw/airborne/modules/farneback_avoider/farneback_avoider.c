@@ -63,11 +63,12 @@ float maxDistance = 2.25;               // max waypoint displacement [m]
 //float ttc = 0;
 float ttc_temp = 0;
 float safe_time = 0;
-float safe_time_threshold = 4.5;
+float safe_time_threshold = 4.9;
 int test_free_confidence = 5;
 int TURNING = 0;
 int turn_counter = 0;
 float desired_new_heading = 0;
+float noise_level = 5.0f;
 
 const int16_t max_trajectory_confidence = 5; // number of consecutive negative object detections to be sure we are obstacle free
 
@@ -121,27 +122,26 @@ void farneback_periodic(struct image_t *img)
   //printf("TURNING %d	\t \n", TURNING);
   // update our safe confidence using color thresholdF
   if (TURNING == 1){
-	  safe_time = 5;
+	  safe_time = noise_level;
 	  printf("turning is true \n");
   }
   if(safe_time > safe_time_threshold){
     test_free_confidence++;
   } else {
-    test_free_confidence -= 2;  // be more cautious with positive obstacle detections
+    test_free_confidence -= 3;  // be more cautious with positive obstacle detections
   }
   Bound(test_free_confidence, 0, max_trajectory_confidence);
 
   if (test_free_confidence ==0){
 	  printf("POLE DETECTED BITCHESS \n");
   }
-  //printf("conf: %f \n",test_free_confidence);
-  //HIERONDER NIETS VERANDEREN
+
   obstacle_free_confidence = test_free_confidence;
 
   // bound obstacle_free_confidence
   Bound(obstacle_free_confidence, 0, max_trajectory_confidence);
 
-  float moveDistance = fminf(maxDistance, 0.2f * obstacle_free_confidence);
+  float moveDistance = fminf(maxDistance, 0.1f * obstacle_free_confidence);
 
 
   switch (navigation_state){
@@ -149,7 +149,7 @@ void farneback_periodic(struct image_t *img)
 
     	// Move waypoint forward
     	if (TURNING ==1 ){
-    		 if (turn_counter >= 20){ //wait for the turning motion to be 100% done
+    		 if (turn_counter >= 35){ //wait for the turning motion to be 100% done
     			 TURNING = 0;
     		     turn_counter = 0;
     		 }
