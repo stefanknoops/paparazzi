@@ -24,7 +24,7 @@ struct flow_t* farneback_flow(char *img, int width, int height)
 	  //resize(M,M,Size(60,130),0,0,INTER_NEAREST);
 	  cvtColor(M, image, CV_YUV2GRAY_Y422);
 
-	  Mat crop_image = image(Rect(0,125,240,300));
+	  Mat crop_image = image(Rect(0,125,240,250));
 
 	  Mat flow, cflow, frame;
 	  Mat gray, prevgray, uflow;

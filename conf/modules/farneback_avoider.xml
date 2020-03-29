@@ -10,7 +10,7 @@
     <file name="farneback_avoider.h"/>
   </header>
   <init fun="farneback_init()"/>
-  <periodic fun="farneback_periodic()" freq="25" autorun="TRUE"/>
+  <periodic fun="farneback_periodic()" freq="30" autorun="TRUE"/>
  <makefile target="nps">
        <file name="farneback_avoider.c"/>
 		    <flag name="CFLAGS" value="I$(PAPARAZZI_SRC)/sw/ext/opencv_bebop/install_pc/include"/>

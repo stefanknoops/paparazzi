@@ -137,11 +137,10 @@ void farneback_periodic(struct image_t *img)
   }
 
   obstacle_free_confidence = test_free_confidence;
-
   // bound obstacle_free_confidence
   Bound(obstacle_free_confidence, 0, max_trajectory_confidence);
 
-  float moveDistance = fminf(maxDistance, 0.1f * obstacle_free_confidence);
+  float moveDistance = fminf(maxDistance, 0.10f * obstacle_free_confidence);
 
 
   switch (navigation_state){
@@ -149,7 +148,7 @@ void farneback_periodic(struct image_t *img)
 
     	// Move waypoint forward
     	if (TURNING ==1 ){
-    		 if (turn_counter >= 35){ //wait for the turning motion to be 100% done
+    		 if (turn_counter >= 45){ //wait for the turning motion to be 100% done
     			 TURNING = 0;
     		     turn_counter = 0;
     		 }
@@ -158,7 +157,7 @@ void farneback_periodic(struct image_t *img)
     		 }
     	}
     	else if(TURNING ==0){
-    		moveWaypointForward(WP_TRAJECTORY, 1.5f * moveDistance);
+    	moveWaypointForward(WP_TRAJECTORY, 1.5f * moveDistance);
 		if (!InsideObstacleZone(WaypointX(WP_TRAJECTORY),WaypointY(WP_TRAJECTORY))){
 	      navigation_state = OUT_OF_BOUNDS;
 		} else if (obstacle_free_confidence == 0){
@@ -181,6 +180,7 @@ void farneback_periodic(struct image_t *img)
 
       navigation_state = SEARCH_FOR_SAFE_HEADING;
       TURNING = 1;
+      desired_new_heading = 0;
 
 
       break;
@@ -192,6 +192,7 @@ void farneback_periodic(struct image_t *img)
       // make sure we have a couple of good readings before declaring the way safe
        if (turn_counter >= 30){ //wait for the turning motion to be 100% done
           navigation_state = SAFE;
+          printf("CHECKLOOP \n");
           turn_counter = 0;
           //printf("TESTHEADING");
           desired_new_heading = 0;
@@ -210,9 +211,9 @@ void farneback_periodic(struct image_t *img)
 
       //turn
       TURNING = 1;
+
       increase_nav_heading(heading_increment);
       moveWaypointForward(WP_TRAJECTORY, 0.5f);
-      //desired_new_heading = 0;
 
       if (InsideObstacleZone(WaypointX(WP_TRAJECTORY),WaypointY(WP_TRAJECTORY))){
         // add offset to head back into arena
@@ -224,7 +225,6 @@ void farneback_periodic(struct image_t *img)
 
         // ensure direction is safe before continuing
         navigation_state = SEARCH_FOR_SAFE_HEADING;
-        //navigation_state = SAFE;
       }
       break;
     default:
